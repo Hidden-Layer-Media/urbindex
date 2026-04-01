@@ -1476,10 +1476,11 @@
             transform: translate(-50%, -50%);
             width: 16px;
             height: 16px;
-            border: 2px solid var(--cz-black);
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
             border-top: 2px solid var(--cz-yellow);
-            border-radius: 0;
-            animation: spin 0.8s linear infinite;
+            border-right: 2px solid var(--cz-orange);
+            animation: spin 0.75s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
 
         /* Error States - Construction Zone */
@@ -9426,7 +9427,6 @@
                 try {
                     const storageRef = this.storage.ref();
                     const photoRef = storageRef.child(`profile-photos/${this.currentUser.uid}/${Date.now()}_${file.name}`);
-
                     const uploadTask = photoRef.put(file);
 
                     uploadTask.on('state_changed',
@@ -9438,46 +9438,58 @@
                         (error) => {
                             console.error('Upload error:', error);
                             this.showToast('Failed to upload photo', 'error');
+                            this.activeOperations.delete(opKey);
+                            uploadBtn.disabled = false;
+                            uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
+                            progressDiv.style.display = 'none';
+                            progressBar.style.width = '0%';
                         },
                         async () => {
                             try {
                                 const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
 
-                                // Update user profile with new photo URL
-                                await this.currentUser.updateProfile({
-                                    photoURL: downloadURL
-                                });
-
-                                // Update Firestore user document
-                                await this.db.collection('users').doc(this.currentUser.uid).update({
+                                // Update Firestore user document (set+merge works even if doc doesn't exist)
+                                await this.db.collection('users').doc(this.currentUser.uid).set({
                                     photoURL: downloadURL,
                                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                                });
+                                }, { merge: true });
 
-                                document.getElementById('profile-photo-url').value = downloadURL;
-                                this.showToast('Profile photo uploaded successfully!', 'success');
+                                // Update Firebase Auth profile
+                                try {
+                                    await this.currentUser.updateProfile({ photoURL: downloadURL });
+                                } catch (authErr) {
+                                    console.warn('Auth profile update skipped:', authErr.message);
+                                }
 
-                                // Refresh profile if currently viewing
+                                const urlInput = document.getElementById('profile-photo-url');
+                                if (urlInput) urlInput.value = downloadURL;
+
+                                this.showToast('Profile photo updated!', 'success');
+
                                 if (document.getElementById('profile-view').classList.contains('active')) {
                                     this.loadProfile();
                                 }
                             } catch (error) {
-                                console.error('Error updating profile:', error);
-                                this.showToast('Photo uploaded but failed to update profile', 'error');
+                                console.error('Error saving photo URL:', error);
+                                this.showToast('Photo uploaded but failed to save — try again', 'error');
+                            } finally {
+                                this.activeOperations.delete(opKey);
+                                uploadBtn.disabled = false;
+                                uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
+                                setTimeout(() => {
+                                    progressDiv.style.display = 'none';
+                                    progressBar.style.width = '0%';
+                                }, 1500);
                             }
                         }
                     );
                 } catch (error) {
                     console.error('Upload setup error:', error);
                     this.showToast('Failed to start upload', 'error');
-                } finally {
                     this.activeOperations.delete(opKey);
                     uploadBtn.disabled = false;
                     uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
-                    setTimeout(() => {
-                        progressDiv.style.display = 'none';
-                        progressBar.style.width = '0%';
-                    }, 2000);
+                    progressDiv.style.display = 'none';
                 }
             }
 
