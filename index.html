@@ -6647,6 +6647,7 @@
                     this.renderProfilePosts(posts);
                 } catch (error) {
                     console.error('Error loading profile posts:', error);
+                    container.classList.remove('loading');
                     container.innerHTML = '<div class="error">Failed to load posts</div>';
                 }
             }
@@ -6654,6 +6655,7 @@
             renderProfilePosts(posts) {
                 const container = document.getElementById('profile-posts-list');
                 if (!container) return;
+                container.classList.remove('loading');
 
                 if (!posts.length) {
                     container.innerHTML = '<div style="color: var(--text-muted);">No posts yet.</div>';
@@ -6729,7 +6731,8 @@
             async loadProfileComments(targetUserId) {
                 const container = document.getElementById('profile-comments-list');
                 if (!container) return;
-                container.innerHTML = '<div class="loading">Loading comments...</div>';
+                container.classList.add('loading');
+                container.innerHTML = '';
 
                 try {
                     const snapshot = await this.db.collection('comments')
@@ -6750,6 +6753,7 @@
                     this.renderProfileComments(comments);
                 } catch (error) {
                     console.error('Error loading profile comments:', error);
+                    container.classList.remove('loading');
                     container.innerHTML = '<div class="error">Failed to load comments</div>';
                 }
             }
@@ -6757,6 +6761,7 @@
             renderProfileComments(comments) {
                 const container = document.getElementById('profile-comments-list');
                 if (!container) return;
+                container.classList.remove('loading');
 
                 if (!comments.length) {
                     container.innerHTML = '<div style="color: var(--text-muted);">No comments yet.</div>';
