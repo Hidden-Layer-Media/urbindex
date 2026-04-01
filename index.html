@@ -4177,13 +4177,13 @@
             </div>
 
             <div class="view" id="profile-view" role="tabpanel" aria-labelledby="profile-tab">
-                <div id="profile-content" class="loading" role="status" aria-live="polite">Loading profile...</div>
+                <div id="profile-content" role="status" aria-live="polite"></div>
             </div>
 
             <!-- User Settings Panel -->
             <div class="view" id="settings-view" role="tabpanel" aria-labelledby="settings-tab">
                 <h2>Settings</h2>
-                <div id="settings-content" class="loading" role="status" aria-live="polite">Loading settings...</div>
+                <div id="settings-content" role="status" aria-live="polite"></div>
             </div>
 
             <div class="view" id="social-view" role="tabpanel" aria-labelledby="social-tab">
@@ -9523,6 +9523,7 @@
             async loadProfile(userId = null) {
                 const content = document.getElementById('profile-content');
                 if (!content) return;
+                content.classList.remove('loading');
 
                 // If no userId provided, show current user's profile
                 const targetUserId = userId || this.currentUser?.uid;
