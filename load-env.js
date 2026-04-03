@@ -10,6 +10,10 @@ window.FIREBASE_STORAGE_BUCKET = 'urbindex-d69e1.firebasestorage.app';
 window.FIREBASE_MESSAGING_SENDER_ID = '123456789';
 window.FIREBASE_APP_ID = '1:123456789:web:abcdef123456';
 
+// Cloudinary config — replace with your values from cloudinary.com/console
+window.CLOUDINARY_CLOUD_NAME = 'djvremaue';
+window.CLOUDINARY_UPLOAD_PRESET = 'preset_1';
+
 console.log('Environment variables loaded successfully');
 console.log('Firebase API Key:', window.FIREBASE_API_KEY ? 'Set' : 'Not set');
 console.log('Firebase Auth Domain:', window.FIREBASE_AUTH_DOMAIN ? 'Set' : 'Not set');

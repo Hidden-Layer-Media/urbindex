@@ -9402,7 +9402,6 @@
 
                 const file = fileInput.files[0];
 
-                // Validate file
                 try {
                     this.validateImageFile(file);
                 } catch (error) {
@@ -9424,64 +9423,79 @@
                 progressDiv.style.display = 'block';
 
                 try {
-                    const storageRef = this.storage.ref();
-                    const photoRef = storageRef.child(`profile-photos/${this.currentUser.uid}/${Date.now()}_${file.name}`);
-                    const uploadTask = photoRef.put(file);
+                    // Upload to Cloudinary via unsigned upload preset
+                    const CLOUD_NAME = window.CLOUDINARY_CLOUD_NAME || 'YOUR_CLOUD_NAME';
+                    const UPLOAD_PRESET = window.CLOUDINARY_UPLOAD_PRESET || 'YOUR_UPLOAD_PRESET';
 
-                    uploadTask.on('state_changed',
-                        (snapshot) => {
-                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                            progressBar.style.width = progress + '%';
-                            progressText.textContent = `Uploading... ${Math.round(progress)}%`;
-                        },
-                        (error) => {
-                            console.error('Upload error:', error);
-                            this.showToast('Failed to upload photo', 'error');
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('upload_preset', UPLOAD_PRESET);
+                    formData.append('folder', `urbindex/profile-photos/${this.currentUser.uid}`);
+                    formData.append('public_id', `${this.currentUser.uid}_${Date.now()}`);
+
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`);
+
+                    xhr.upload.onprogress = (e) => {
+                        if (e.lengthComputable) {
+                            const pct = Math.round((e.loaded / e.total) * 100);
+                            progressBar.style.width = pct + '%';
+                            progressText.textContent = `Uploading... ${pct}%`;
+                        }
+                    };
+
+                    xhr.onload = async () => {
+                        try {
+                            if (xhr.status !== 200) throw new Error(`Upload failed: ${xhr.status}`);
+
+                            const result = JSON.parse(xhr.responseText);
+                            const downloadURL = result.secure_url;
+
+                            // Save URL to Firestore
+                            await this.db.collection('users').doc(this.currentUser.uid).set({
+                                photoURL: downloadURL,
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            }, { merge: true });
+
+                            // Update Firebase Auth profile (non-fatal if it fails)
+                            try {
+                                await this.currentUser.updateProfile({ photoURL: downloadURL });
+                            } catch (e) {
+                                console.warn('Auth profile update skipped:', e.message);
+                            }
+
+                            const urlInput = document.getElementById('profile-photo-url');
+                            if (urlInput) urlInput.value = downloadURL;
+
+                            this.showToast('Profile photo updated!', 'success');
+
+                            if (document.getElementById('profile-view').classList.contains('active')) {
+                                this.loadProfile();
+                            }
+                        } catch (error) {
+                            console.error('Error saving photo URL:', error);
+                            this.showToast('Upload failed — check your Cloudinary config', 'error');
+                        } finally {
                             this.activeOperations.delete(opKey);
                             uploadBtn.disabled = false;
                             uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
-                            progressDiv.style.display = 'none';
-                            progressBar.style.width = '0%';
-                        },
-                        async () => {
-                            try {
-                                const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-
-                                // Update Firestore user document (set+merge works even if doc doesn't exist)
-                                await this.db.collection('users').doc(this.currentUser.uid).set({
-                                    photoURL: downloadURL,
-                                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                                }, { merge: true });
-
-                                // Update Firebase Auth profile
-                                try {
-                                    await this.currentUser.updateProfile({ photoURL: downloadURL });
-                                } catch (authErr) {
-                                    console.warn('Auth profile update skipped:', authErr.message);
-                                }
-
-                                const urlInput = document.getElementById('profile-photo-url');
-                                if (urlInput) urlInput.value = downloadURL;
-
-                                this.showToast('Profile photo updated!', 'success');
-
-                                if (document.getElementById('profile-view').classList.contains('active')) {
-                                    this.loadProfile();
-                                }
-                            } catch (error) {
-                                console.error('Error saving photo URL:', error);
-                                this.showToast('Photo uploaded but failed to save — try again', 'error');
-                            } finally {
-                                this.activeOperations.delete(opKey);
-                                uploadBtn.disabled = false;
-                                uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
-                                setTimeout(() => {
-                                    progressDiv.style.display = 'none';
-                                    progressBar.style.width = '0%';
-                                }, 1500);
-                            }
+                            setTimeout(() => {
+                                progressDiv.style.display = 'none';
+                                progressBar.style.width = '0%';
+                            }, 1500);
                         }
-                    );
+                    };
+
+                    xhr.onerror = () => {
+                        this.showToast('Network error during upload', 'error');
+                        this.activeOperations.delete(opKey);
+                        uploadBtn.disabled = false;
+                        uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
+                        progressDiv.style.display = 'none';
+                    };
+
+                    xhr.send(formData);
+
                 } catch (error) {
                     console.error('Upload setup error:', error);
                     this.showToast('Failed to start upload', 'error');
@@ -9490,6 +9504,7 @@
                     uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
                     progressDiv.style.display = 'none';
                 }
+            }
             }
 
             validateImageFile(file) {
