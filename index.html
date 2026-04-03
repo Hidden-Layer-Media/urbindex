@@ -8480,7 +8480,9 @@
 
                 this.auth.onAuthStateChanged(user => {
                     this.currentUser = user;
-                    this.updateAuthUI(); // Call enhanced auth UI update
+                    this.updateAuthUI();
+                    this.loadActivity();
+                    this.loadStats();
                     
                     if (user) {
                         console.log('User authenticated:', user.uid, user.isAnonymous ? '(anonymous)' : '(registered)');
@@ -9033,14 +9035,6 @@
             }
 
             loadActivity() {
-                if (!this.auth.currentUser) {
-                    const feed = document.getElementById('activity-feed');
-                    if (feed) {
-                        feed.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 16px;">Sign in to view activity</div>';
-                    }
-                    return;
-                }
-
                 try {
                     this.db.collection('locations')
                         .where('status', '==', 'active')
@@ -9074,7 +9068,7 @@
                             const feed = document.getElementById('activity-feed');
                             if (feed) {
                                 if (error.code === 'permission-denied') {
-                                    feed.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 16px;">Sign in to view activity</div>';
+                                    feed.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 16px;">No activity yet</div>';
                                 } else {
                                     feed.innerHTML = '<div class="error">Failed to load activity</div>';
                                 }
