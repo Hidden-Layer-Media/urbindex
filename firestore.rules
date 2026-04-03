@@ -16,7 +16,7 @@ service cloud.firestore {
     }
     
     function isValidDisplayName(name) {
-      return name.size() >= 2 && name.size() <= 50 && name.matches('[a-zA-Z0-9\\s\\-_]+');
+      return name.size() >= 2 && name.size() <= 50;
     }
     
     function isValidPassword(password) {
