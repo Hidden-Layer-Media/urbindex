@@ -21,7 +21,7 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "max-age=31536000"
+            "value": "no-cache"
           }
         ]
       },
@@ -39,11 +39,7 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "max-age=3600"
-          },
-          {
-            "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://www.gstatic.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://api.cloudinary.com https://res.cloudinary.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com"
+            "value": "no-cache"
           }
         ]
       }
