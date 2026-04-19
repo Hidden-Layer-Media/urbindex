@@ -44,9 +44,9 @@ Thumbs.db
 .history/
 css/
 js/
-index.html
-production.html
-index-optimized.html
+/index.html
+/production.html
+/index-optimized.html
 
 # Actual icon files (placeholder READMEs are included)
 images/icons/*.png

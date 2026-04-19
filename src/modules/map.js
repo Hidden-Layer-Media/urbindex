@@ -41,6 +41,7 @@ export const mapMethods = {
 
     this.map.on('click', e => this.handleMapClick(e));
     window.addEventListener('resize', () => { if (this.map) setTimeout(() => this.map.invalidateSize(), 100); });
+    setTimeout(() => this.map.invalidateSize(), 200);
   },
 
   handleMapClick(e) {

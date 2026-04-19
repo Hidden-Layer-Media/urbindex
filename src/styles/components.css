@@ -265,6 +265,9 @@ textarea.form-control {
   pointer-events: all;
 }
 
+.auth-form { display: none; }
+.auth-form.active { display: block; }
+
 .modal {
   background: var(--black-panel);
   border: 1px solid var(--yellow-dim);

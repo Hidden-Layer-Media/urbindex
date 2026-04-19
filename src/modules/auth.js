@@ -223,7 +223,7 @@ export const authMethods = {
     const text = document.getElementById('status-text');
 
     if (this.currentUser) {
-      span?.textContent && (span.textContent = 'Sign Out');
+      if (span) span.textContent = 'Sign Out';
       if (icon) icon.className = 'fas fa-sign-out-alt';
       btn?.setAttribute('title', 'Sign out of your account');
       if (profileBtn) profileBtn.style.display = '';

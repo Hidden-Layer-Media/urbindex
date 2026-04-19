@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URBINDEX // Urban Exploration Network</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#FFD000">
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Loading Screen -->
+<div id="loading-screen">
+  <div class="loading-logo">URBINDEX</div>
+  <div class="loading-spinner"></div>
+  <div class="loading-text">// Initializing network...</div>
+</div>
+
+<div class="app">
+
+  <!-- Header -->
+  <header class="header" role="banner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="logo">URBINDEX</div>
+      <span class="logo-tag">// urban exploration network</span>
+    </div>
+    <div class="header-right">
+      <div class="status-bar">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">Connecting...</span>
+      </div>
+      <div id="session-warning" class="session-warning" style="display:none;">
+        Session expires in <span id="session-countdown">5</span>m
+        <button class="btn btn-sm" onclick="app.refreshSession()">Extend</button>
+      </div>
+      <button class="btn btn-sm" id="profile-btn" onclick="app.handleProfileButtonClick()">
+        <i class="fas fa-user-circle"></i> <span id="profile-btn-text">Profile</span>
+      </button>
+      <button class="btn btn-primary btn-sm" id="auth-btn" type="button" onclick="app.handleAuth()">
+        <i class="fas fa-terminal"></i>
+        <span id="auth-btn-text">Sign In</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Navigation -->
+  <nav class="nav" role="navigation" id="navigation">
+    <button class="nav-btn active" type="button" data-view="map"><i class="fas fa-map"></i> Map</button>
+    <button class="nav-btn" type="button" data-view="locations"><i class="fas fa-map-marker-alt"></i> Locations</button>
+    <button class="nav-btn" type="button" data-view="social"><i class="fas fa-users"></i> Social</button>
+    <button class="nav-btn" type="button" data-view="profile"><i class="fas fa-user"></i> Profile</button>
+    <button class="nav-btn" type="button" data-view="missions"><i class="fas fa-trophy"></i> Missions</button>
+    <button class="nav-btn" type="button" data-view="routes"><i class="fas fa-route"></i> Routes</button>
+    <button class="nav-btn" type="button" data-view="groups"><i class="fas fa-layer-group"></i> Groups</button>
+    <button class="nav-btn" type="button" data-view="notifications">
+      <i class="fas fa-bell"></i> Alerts
+      <span class="nav-badge" id="notification-badge" style="display:none;"></span>
+    </button>
+    <button class="nav-btn" type="button" data-view="settings"><i class="fas fa-cog"></i> Settings</button>
+  </nav>
+
+  <!-- FAB -->
+  <button class="fab" id="add-location-fab" aria-label="Add Location">
+    <i class="fas fa-plus"></i>
+  </button>
+
+  <main class="main" id="main-content" role="main">
+
+    <!-- MAP VIEW -->
+    <div class="view active" id="map-view">
+      <div class="dashboard-hero">
+        <div>
+          <div class="hero-eyebrow"><i class="fas fa-broadcast-tower"></i> Live Ops</div>
+          <div class="hero-title">Field Ops Command</div>
+          <div class="hero-sub">Track the network. Drop finds. Connect with the crew.</div>
+          <div class="quick-actions">
+            <button class="btn btn-primary btn-sm" onclick="app.showAddLocationModal()"><i class="fas fa-plus"></i> Drop Location</button>
+            <button class="btn btn-sm" id="recenter-btn"><i class="fas fa-crosshairs"></i> <span>My Location</span></button>
+            <button class="btn btn-sm" onclick="app.showView('missions')"><i class="fas fa-trophy"></i> Missions</button>
+            <button class="btn btn-sm" onclick="app.createNewPost()"><i class="fas fa-bullhorn"></i> Post Intel</button>
+          </div>
+        </div>
+        <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="stat-card"><div class="stat-value" id="hero-total-locations">0</div><div class="stat-label">Locations</div></div>
+          <div class="stat-card"><div class="stat-value" id="hero-active-users">0</div><div class="stat-label">Explorers</div></div>
+          <div class="stat-card"><div class="stat-value" id="hero-activity-index">--</div><div class="stat-label">Activity</div></div>
+        </div>
+      </div>
+
+      <div class="map-layout">
+        <aside class="sidebar">
+          <div class="panel">
+            <div class="panel-header"><i class="fas fa-rss"></i> // Recent Activity</div>
+            <div class="panel-body"><div id="activity-feed" class="loading">Loading...</div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><i class="fas fa-chart-bar"></i> // Network Stats</div>
+            <div class="panel-body">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);">
+                <div style="background:var(--black-raised);padding:10px;text-align:center;"><div class="stat-value" id="total-locations" style="font-size:1.4rem;">0</div><div class="stat-label">Locations</div></div>
+                <div style="background:var(--black-raised);padding:10px;text-align:center;"><div class="stat-value" id="active-users" style="font-size:1.4rem;">0</div><div class="stat-label">Explorers</div></div>
+              </div>
+            </div>
+          </div>
+        </aside>
+        <div class="map-container">
+          <div id="map" tabindex="0" aria-label="Urban exploration map"></div>
+          <div id="location-indicator" class="location-indicator" style="display:none;">
+            <i class="fas fa-location-arrow"></i>
+            <span>Detecting location...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOCATIONS VIEW -->
+    <div class="view" id="locations-view">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2>// My Locations</h2>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-sm" onclick="app.showView('map')"><i class="fas fa-map"></i> Map</button>
+          <button class="btn btn-primary btn-sm" onclick="app.showAddLocationModal()"><i class="fas fa-plus"></i> Add</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <input class="input" type="text" id="location-search" placeholder="Search..." style="flex:1;min-width:160px;max-width:280px;">
+        <select class="input" id="category-filter" style="width:auto;">
+          <option value="">All Categories</option>
+          <option>abandoned</option><option>industrial</option><option>infrastructure</option>
+          <option>nature</option><option>underground</option><option>rooftop</option>
+          <option>historical</option><option>other</option>
+        </select>
+        <select class="input" id="risk-filter" style="width:auto;">
+          <option value="">All Risk</option>
+          <option>safe</option><option>low</option><option>medium</option><option>high</option><option>extreme</option>
+        </select>
+        <select class="input" id="sort-filter" style="width:auto;">
+          <option value="recent">Recent</option>
+          <option value="name">Name</option>
+          <option value="risk">Risk</option>
+          <option value="score">Score</option>
+        </select>
+      </div>
+      <div id="locations-grid"></div>
+    </div>
+
+    <!-- SOCIAL VIEW -->
+    <div class="view" id="social-view">
+      <div id="social-view-content"></div>
+    </div>
+
+    <!-- PROFILE VIEW -->
+    <div class="view" id="profile-view">
+      <div id="profile-content"></div>
+    </div>
+
+    <!-- MISSIONS VIEW -->
+    <div class="view" id="missions-view">
+      <div id="missions-view-content"></div>
+    </div>
+
+    <!-- ROUTES VIEW -->
+    <div class="view" id="routes-view">
+      <div id="routes-view-content"></div>
+    </div>
+
+    <!-- GROUPS VIEW -->
+    <div class="view" id="groups-view">
+      <div id="groups-view-content"></div>
+    </div>
+
+    <!-- NOTIFICATIONS VIEW -->
+    <div class="view" id="notifications-view">
+      <div id="notifications-view-content"></div>
+    </div>
+
+    <!-- SETTINGS VIEW -->
+    <div class="view" id="settings-view">
+      <div id="settings-content"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Add/Edit Location Modal -->
+<div id="location-modal-overlay" class="modal-overlay" onclick="if(event.target===this)app.hideModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="app.hideModal()" aria-label="Close">&times;</button>
+    <div class="modal-header"><h3>Add Location</h3></div>
+    <form id="location-form">
+      <div class="form-group">
+        <label class="form-label">Location Name *</label>
+        <input class="input" type="text" id="location-name" required maxlength="100" placeholder="// Enter name...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description *</label>
+        <textarea class="textarea" id="location-description" rows="3" maxlength="1000" placeholder="// Describe the location..." required></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="input" id="location-category">
+            <option value="abandoned">Abandoned</option><option value="industrial">Industrial</option>
+            <option value="infrastructure">Infrastructure</option><option value="nature">Nature</option>
+            <option value="underground">Underground</option><option value="rooftop">Rooftop</option>
+            <option value="historical">Historical</option><option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Risk Level</label>
+          <select class="input" id="location-risk">
+            <option value="safe">Safe</option><option value="low">Low</option>
+            <option value="medium" selected>Medium</option><option value="high">High</option><option value="extreme">Extreme</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Address / Geocode</label>
+        <div style="display:flex;gap:6px;">
+          <input class="input" type="text" id="location-address" placeholder="// Search address or place..." style="flex:1;">
+          <button type="button" class="btn btn-sm" id="find-location-btn"><i class="fas fa-search"></i></button>
+          <button type="button" class="btn btn-sm" id="use-my-location-btn"><i class="fas fa-crosshairs"></i></button>
+        </div>
+        <div class="form-hint" style="margin-top:4px;color:var(--text-muted);font-size:0.8rem;">Or click on the map to pin a location</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-group">
+          <label class="form-label">Latitude</label>
+          <input class="input" type="number" id="location-lat" step="any" placeholder="0.000000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Longitude</label>
+          <input class="input" type="number" id="location-lng" step="any" placeholder="0.000000">
+        </div>
+      </div>
+      <div id="coordinates-display" style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">Click on map or use address to set location</div>
+      <div class="form-group">
+        <label class="form-label">Tags</label>
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <input class="input" type="text" id="tag-input" placeholder="Add tag, press Enter..." maxlength="25" style="flex:1;">
+        </div>
+        <div id="selected-tags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;"></div>
+        <div id="predefined-tags-list" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button type="button" class="btn" onclick="app.hideModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Location</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Auth Modal -->
+<div id="auth-modal" class="modal-overlay" onclick="if(event.target===this)app.hideAuthModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="app.hideAuthModal()" aria-label="Close">&times;</button>
+    <div class="modal-header"><h3>// Access Terminal</h3></div>
+    <div class="tabs" style="display:flex;gap:0;margin-bottom:16px;border-bottom:1px solid var(--border);">
+      <button class="auth-tab active" data-tab="signin" style="flex:1;padding:8px;background:none;border:none;cursor:pointer;color:var(--yellow);border-bottom:2px solid var(--yellow);">Sign In</button>
+      <button class="auth-tab" data-tab="signup" style="flex:1;padding:8px;background:none;border:none;cursor:pointer;color:var(--text-muted);">Register</button>
+    </div>
+
+    <!-- Sign In Form -->
+    <div class="auth-form active" id="signin-form">
+      <form id="signin-form-element">
+        <div class="form-group">
+          <label class="form-label" for="signin-email">Email</label>
+          <input class="input" type="email" id="signin-email" required placeholder="user@example.com" autocomplete="email">
+          <div class="field-error" id="signin-email-error" style="display:none;color:var(--red-alert);font-size:0.8rem;margin-top:2px;"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="signin-password">Password</label>
+          <input class="input" type="password" id="signin-password" required placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-terminal"></i> Connect</button>
+          <button type="button" class="btn" id="google-signin-btn"><i class="fab fa-google"></i> Google</button>
+          <button type="button" class="btn" id="github-signin-btn"><i class="fab fa-github"></i> GitHub</button>
+          <button type="button" class="btn" onclick="app.signInAnonymously()"><i class="fas fa-ghost"></i> Browse Anonymously</button>
+          <button type="button" class="btn btn-sm" style="align-self:flex-start;" onclick="app.showPasswordResetModal()">Forgot password?</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Sign Up Form -->
+    <div class="auth-form" id="signup-form">
+      <form id="signup-form-element">
+        <div class="form-group">
+          <label class="form-label" for="signup-email">Email</label>
+          <input class="input" type="email" id="signup-email" required placeholder="user@example.com" autocomplete="email">
+          <div class="field-error" id="signup-email-error" style="display:none;color:var(--red-alert);font-size:0.8rem;margin-top:2px;"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="signup-password">Password</label>
+          <input class="input" type="password" id="signup-password" required placeholder="Min 8 chars..." autocomplete="new-password">
+          <div class="field-error" id="signup-password-error" style="display:none;color:var(--red-alert);font-size:0.8rem;margin-top:2px;"></div>
+          <div style="margin-top:6px;height:4px;background:var(--black-border);">
+            <div id="password-strength-fill" class="strength-fill" style="height:100%;width:0%;transition:width 0.2s;"></div>
+          </div>
+          <div id="password-strength-text" style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">Password strength: Not entered</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="signup-confirm-password">Confirm Password</label>
+          <input class="input" type="password" id="signup-confirm-password" required placeholder="Repeat password" autocomplete="new-password">
+          <div class="field-error" id="signup-confirm-error" style="display:none;color:var(--red-alert);font-size:0.8rem;margin-top:2px;"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Register</button>
+          <button type="button" class="btn" id="google-signup-btn"><i class="fab fa-google"></i> Google</button>
+          <button type="button" class="btn" id="github-signup-btn"><i class="fab fa-github"></i> GitHub</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Password Reset Modal -->
+<div id="password-reset-modal" class="modal-overlay" onclick="if(event.target===this)app.hidePasswordResetModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="app.hidePasswordResetModal()" aria-label="Close">&times;</button>
+    <div class="modal-header"><h3>// Password Reset</h3></div>
+    <form id="password-reset-form">
+      <div class="form-group">
+        <label class="form-label" for="reset-email">Email Address</label>
+        <input class="input" type="email" id="reset-email" required placeholder="user@example.com">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button type="button" class="btn" onclick="app.hidePasswordResetModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send Reset Link</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div id="edit-profile-modal" class="modal-overlay" onclick="if(event.target===this)app.hideEditProfileModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="app.hideEditProfileModal()" aria-label="Close">&times;</button>
+    <div class="modal-header"><h3>// Edit Profile</h3></div>
+    <form id="edit-profile-form">
+      <div class="form-group">
+        <label class="form-label" for="profile-display-name">Display Name</label>
+        <input class="input" type="text" id="profile-display-name" maxlength="50" placeholder="Your handle">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="profile-bio">Bio</label>
+        <textarea class="textarea" id="profile-bio" rows="3" maxlength="300" placeholder="Tell the network about yourself..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="profile-photo-url">Profile Photo URL</label>
+        <input class="input" type="url" id="profile-photo-url" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="profile-links">Links (one per line)</label>
+        <textarea class="textarea" id="profile-links" rows="3" placeholder="https://..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="profile-gallery">Gallery Image URLs (one per line)</label>
+        <textarea class="textarea" id="profile-gallery" rows="3" placeholder="https://..."></textarea>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button type="button" class="btn" onclick="app.hideEditProfileModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="profile-submit-btn"><i class="fas fa-save"></i> Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- User Locations Modal -->
+<div id="user-locations-modal" class="modal-overlay" onclick="if(event.target===this)app.hideUserLocationsModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="app.hideUserLocationsModal()" aria-label="Close">&times;</button>
+    <div class="modal-header"><h3 id="user-locations-title">// User Locations</h3></div>
+    <div id="user-locations-list" class="loading">Loading...</div>
+  </div>
+</div>
+
+<!-- Location Detail Modal -->
+<div id="location-detail-modal" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="document.getElementById('location-detail-modal').classList.remove('active')" aria-label="Close">&times;</button>
+    <div id="location-detail-content"></div>
+  </div>
+</div>
+
+<!-- Firebase + Leaflet -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<script>
+  window.FIREBASE_CONFIG = {
+    apiKey: 'AIzaSyCifqLPnCuvRVZ9hvHIJVBmHkzB5nJyqtc',
+    authDomain: 'urbindex-d69e1.firebaseapp.com',
+    projectId: 'urbindex-d69e1',
+    storageBucket: 'urbindex-d69e1.firebasestorage.app',
+    messagingSenderId: '123456789',
+    appId: '1:123456789:web:abcdef123456',
+  };
+  window.firebaseConfig = window.FIREBASE_CONFIG;
+  window.CLOUDINARY_CLOUD_NAME = 'djvremaue';
+  window.CLOUDINARY_UPLOAD_PRESET = 'preset_1';
+</script>
+<script type="module" src="./main.js"></script>
+
+</body>
+</html>
