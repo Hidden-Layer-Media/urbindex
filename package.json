@@ -4,10 +4,13 @@
   "description": "A Progressive Web App for urban exploration mapping with a cyberpunk aesthetic",
   "main": "final.html",
   "scripts": {
-    "start": "http-server -p 8080 -c-1",
-    "deploy": "firebase deploy",
-    "lint": "eslint js/*.js",
-    "test": "echo \"No tests specified\" && exit 0"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "vite",
+    "deploy": "npm run build && firebase deploy",
+    "lint": "eslint src/**/*.js",
+    "test": "playwright test"
   },
   "keywords": [
     "pwa",
@@ -30,7 +33,9 @@
     "eslint": "^8.40.0",
     "firebase-tools": "^12.0.1",
     "http-server": "^14.1.1",
-    "mocha": "^11.7.5"
+    "mocha": "^11.7.5",
+    "vite": "^7.3.2",
+    "vite-plugin-pwa": "^1.2.0"
   },
   "engines": {
     "node": ">=14.0.0"
