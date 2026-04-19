@@ -1,0 +1,83 @@
+:root {
+  /* Core palette — dark BBS terminal */
+  --black:        #000000;
+  --black-soft:   #0a0a0a;
+  --black-panel:  #0f0f0f;
+  --black-raised: #161616;
+  --black-border: #1e1e1e;
+
+  --yellow:       #FFD000;
+  --yellow-dim:   #CC9900;
+  --yellow-glow:  rgba(255, 208, 0, 0.15);
+  --yellow-muted: #6b5400;
+
+  --amber:        #FFAA00;
+  --green-term:   #00FF41;
+  --red-alert:    #FF2222;
+  --blue-cold:    #3399FF;
+  --cyan:         #00CCCC;
+
+  /* Text */
+  --text:         #E8E8E8;
+  --text-dim:     #999999;
+  --text-muted:   #555555;
+  --text-yellow:  var(--yellow);
+  --text-inverse: var(--black);
+
+  /* Borders */
+  --border:       #2a2a2a;
+  --border-bright:#FFD000;
+  --border-dim:   #1a1a1a;
+
+  /* Typography — monospace everything */
+  --font-mono:    'Courier New', 'Lucida Console', 'Terminal', monospace;
+  --font-title:   'Impact', 'Arial Black', var(--font-mono);
+
+  /* Effects */
+  --scanline: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+  --glow-yellow: 0 0 8px rgba(255, 208, 0, 0.6), 0 0 20px rgba(255, 208, 0, 0.2);
+  --glow-green:  0 0 8px rgba(0, 255, 65, 0.5);
+  --glow-red:    0 0 8px rgba(255, 34, 34, 0.6);
+
+  --shadow-panel: 0 0 0 1px var(--border), 4px 4px 0 rgba(0,0,0,0.8);
+  --shadow-lift:  0 0 0 1px var(--yellow-dim), 4px 4px 0 rgba(0,0,0,0.9);
+
+  --transition:   0.1s ease;
+  --radius:       0px; /* BBS aesthetic — hard corners */
+
+  /* ── Legacy aliases (used in inline JS template strings) ── */
+  --cz-yellow:          var(--yellow);
+  --cz-yellow-dark:     var(--yellow-dim);
+  --cz-black:           var(--black);
+  --cz-concrete:        var(--black-raised);
+  --cz-concrete-light:  var(--black-border);
+  --cz-concrete-dark:   var(--black-panel);
+  --cz-blueprint:       #1a3a5c;
+  --cz-orange:          var(--amber);
+  --cz-red:             var(--red-alert);
+  --cz-green:           var(--green-term);
+  --cz-rust:            #5a2800;
+  --bg-primary:         var(--black-panel);
+  --bg-secondary:       var(--black-raised);
+  --text-primary:       var(--text);
+  --text-secondary:     var(--text-dim);
+  --text-muted:         var(--text-muted);
+  --accent-yellow:      var(--yellow);
+  --success:            var(--green-term);
+  --warning:            var(--amber);
+  --danger:             var(--red-alert);
+  --font-stencil:       var(--font-mono);
+  --font-blueprint:     var(--font-mono);
+  --font-industrial:    var(--font-title);
+  --font-mono:          var(--font-mono);
+  --shadow-industrial:  var(--shadow-panel);
+  --shadow-plate:       inset 0 1px 0 rgba(255,255,255,0.05);
+  --hazard-stripe:      repeating-linear-gradient(45deg, var(--yellow) 0px, var(--yellow) 6px, var(--black) 6px, var(--black) 12px);
+  --blueprint-grid:     linear-gradient(rgba(255,208,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,208,0,0.03) 1px, transparent 1px);
+}
