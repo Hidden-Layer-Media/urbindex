@@ -35,11 +35,13 @@ export const dataMethods = {
           if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
           const marker = L.marker([lat, lng], {
             icon: L.divIcon({
-              className: 'custom-location-marker',
-              html: `<div style="background:${this.getRiskColor(data.riskLevel)};width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
-              iconSize: [16, 16], iconAnchor: [8, 8],
+              className: 'ub-pin-wrap',
+              html: `<div class="ub-pin risk-${data.riskLevel || 'unknown'}"><span class="ub-pin-ring"></span></div>`,
+              iconSize: [24, 24], iconAnchor: [12, 12],
             }),
-          }).bindTooltip(data.name || 'Unnamed Location', { direction: 'top', offset: [0, -10] }).bindPopup(this.createLocationPopup(data, doc.id));
+          }).bindTooltip(this.buildLocationTooltip(data), {
+            direction: 'top', offset: [0, -14], className: 'ub-tooltip', sticky: false,
+          }).bindPopup(this.createLocationPopup(data, doc.id));
           valid.push(marker);
           this.markers.set(doc.id, marker);
         } catch {}
@@ -49,6 +51,18 @@ export const dataMethods = {
       const msgs = { 'permission-denied': 'Please sign in to view locations', 'unavailable': 'Network error. Please check your connection.' };
       this.showToast(msgs[err.code] || 'Failed to load locations', 'error');
     });
+  },
+
+  buildLocationTooltip(data) {
+    const name = this.escapeHtml(data.name || 'Unnamed');
+    const cat = this.escapeHtml(data.category || 'unknown');
+    const risk = this.escapeHtml(data.riskLevel || 'unknown');
+    const riskColor = this.getRiskColor(data.riskLevel);
+    return `<div class="ub-tip">
+      <div class="ub-tip-name">${name}</div>
+      <div class="ub-tip-meta">// ${cat} &nbsp;<span style="color:${riskColor};">${risk}</span></div>
+      <div class="ub-tip-stats"><i class="fas fa-eye"></i> ${data.visitCount || 0} &nbsp;<i class="fas fa-heart"></i> ${data.likesCount || 0}</div>
+    </div>`;
   },
 
   createLocationPopup(data, docId) {

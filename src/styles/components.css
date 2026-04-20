@@ -576,3 +576,224 @@ textarea.form-control {
   letter-spacing: 4px;
   margin-bottom: 8px;
 }
+
+/* ══════════════════════════════════════════════
+   LEAFLET MAP THEME — urbindex dark
+   ══════════════════════════════════════════════ */
+
+/* Tile filter: darken + subtle amber tint */
+.leaflet-tile-pane {
+  filter: brightness(0.82) sepia(0.2) saturate(0.85);
+}
+
+/* Scanline overlay above tiles, below markers */
+.map-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--scanline);
+  pointer-events: none;
+  z-index: 300;
+  opacity: 0.5;
+}
+
+/* ── Zoom controls ── */
+.leaflet-control-zoom {
+  border: 1px solid var(--yellow-dim) !important;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.9) !important;
+  border-radius: 0 !important;
+}
+
+.leaflet-control-zoom a {
+  background: var(--black-panel) !important;
+  color: var(--yellow) !important;
+  border-bottom: 1px solid var(--border) !important;
+  border-radius: 0 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 16px !important;
+  line-height: 26px !important;
+  width: 26px !important;
+  height: 26px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-decoration: none !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: var(--black-raised) !important;
+  color: var(--yellow) !important;
+  text-shadow: var(--glow-yellow) !important;
+}
+
+.leaflet-control-zoom-out {
+  border-bottom: none !important;
+}
+
+/* ── Popup ── */
+.leaflet-popup-content-wrapper {
+  background: var(--black-panel) !important;
+  border: 1px solid var(--yellow-dim) !important;
+  border-radius: 0 !important;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.95), 0 0 24px rgba(255,208,0,0.07) !important;
+  color: var(--text) !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  padding: 12px !important;
+}
+
+.leaflet-popup-tip-container {
+  display: none !important;
+}
+
+.leaflet-popup-close-button {
+  color: var(--yellow-dim) !important;
+  font-size: 18px !important;
+  right: 6px !important;
+  top: 4px !important;
+  padding: 0 !important;
+  background: none !important;
+  z-index: 1 !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: var(--yellow) !important;
+  text-shadow: var(--glow-yellow) !important;
+  background: none !important;
+}
+
+/* ── Tooltip ── */
+.leaflet-tooltip.ub-tooltip {
+  background: var(--black) !important;
+  border: 1px solid var(--yellow-dim) !important;
+  border-radius: 0 !important;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.9) !important;
+  color: var(--text) !important;
+  padding: 0 !important;
+  font-family: var(--font-mono) !important;
+}
+
+.leaflet-tooltip.ub-tooltip::before {
+  display: none !important;
+}
+
+.ub-tip {
+  padding: 7px 10px;
+  min-width: 140px;
+}
+
+.ub-tip-name {
+  color: var(--yellow);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.ub-tip-meta {
+  color: var(--text-muted);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+
+.ub-tip-stats {
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
+.ub-tip-stats i {
+  color: var(--yellow-muted);
+  margin-right: 2px;
+}
+
+/* ── Diamond pin markers ── */
+.ub-pin-wrap {
+  background: transparent !important;
+  border: none !important;
+}
+
+.ub-pin {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  margin: 5px;
+  transform: rotate(45deg);
+  border: 2px solid rgba(0,0,0,0.75);
+}
+
+.ub-pin-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1.5px solid;
+  opacity: 0;
+  transform: rotate(-45deg);
+  animation: ub-pulse 3s ease-out infinite;
+  pointer-events: none;
+}
+
+.ub-pin.risk-safe    { background: #00FF41; border-color: rgba(0,0,0,0.6); box-shadow: 0 0 6px rgba(0,255,65,0.7); }
+.ub-pin.risk-safe .ub-pin-ring    { border-color: #00FF41; }
+.ub-pin.risk-low     { background: #88FF00; border-color: rgba(0,0,0,0.6); box-shadow: 0 0 6px rgba(136,255,0,0.6); }
+.ub-pin.risk-low .ub-pin-ring     { border-color: #88FF00; }
+.ub-pin.risk-medium  { background: #FFAA00; border-color: rgba(0,0,0,0.6); box-shadow: 0 0 6px rgba(255,170,0,0.6); }
+.ub-pin.risk-medium .ub-pin-ring  { border-color: #FFAA00; }
+.ub-pin.risk-high    { background: #FF4400; border-color: rgba(0,0,0,0.6); box-shadow: 0 0 8px rgba(255,68,0,0.7); }
+.ub-pin.risk-high .ub-pin-ring    { border-color: #FF4400; }
+.ub-pin.risk-extreme { background: #FF0000; border-color: rgba(0,0,0,0.6); box-shadow: 0 0 10px rgba(255,0,0,0.8); }
+.ub-pin.risk-extreme .ub-pin-ring { border-color: #FF0000; }
+.ub-pin.risk-unknown { background: #666666; border-color: rgba(0,0,0,0.6); }
+.ub-pin.risk-unknown .ub-pin-ring { border-color: #666666; }
+
+@keyframes ub-pulse {
+  0%   { transform: rotate(-45deg) scale(0.8); opacity: 0.7; }
+  70%  { transform: rotate(-45deg) scale(2.2); opacity: 0; }
+  100% { transform: rotate(-45deg) scale(2.2); opacity: 0; }
+}
+
+/* ── Cluster markers ── */
+.marker-cluster {
+  background: var(--black-panel) !important;
+  border: 2px solid var(--yellow-dim) !important;
+  border-radius: 0 !important;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.9), 0 0 12px rgba(255,208,0,0.12) !important;
+}
+
+.marker-cluster div {
+  background: transparent !important;
+  color: var(--yellow) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+.marker-cluster span {
+  line-height: 1 !important;
+}
+
+.marker-cluster-small  { width: 32px !important; height: 32px !important; }
+
+.marker-cluster-medium {
+  width: 40px !important; height: 40px !important;
+  border-color: var(--amber) !important;
+}
+.marker-cluster-medium div { color: var(--amber) !important; }
+
+.marker-cluster-large {
+  width: 48px !important; height: 48px !important;
+  border-color: var(--red-alert) !important;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.9), 0 0 16px rgba(255,34,34,0.25) !important;
+}
+.marker-cluster-large div { color: var(--red-alert) !important; }
