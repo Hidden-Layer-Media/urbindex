@@ -5,9 +5,10 @@ service cloud.firestore {
     
     // Rate limiting helper function
     function isRateLimited(userId) {
-      let attempts = get(/databases/$(database)/documents/rate_limits/$(userId)).data.attempts;
-      let lastAttempt = get(/databases/$(database)/documents/rate_limits/$(userId)).data.lastAttempt;
-      return attempts > 10 && (request.time.toMillis() - lastAttempt) < 900000; // 15 minutes
+      let path = /databases/$(database)/documents/rate_limits/$(userId);
+      return exists(path) && 
+             get(path).data.attempts > 10 && 
+             (request.time.toMillis() - get(path).data.lastAttempt) < 900000; // 15 minutes
     }
     
     // Input validation helper function
@@ -203,21 +204,17 @@ service cloud.firestore {
       allow update: if request.auth != null && resource.data.userId == request.auth.uid;
     }
 
-    // User badges/achievements - users can read all badges, authenticated create/manage their own
+    // User badges/achievements - users can read all badges, only admin/system can manage
     match /user_badges/{badgeId} {
       allow read: if true;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null;
-      allow delete: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false; // System managed
     }
 
     // Missions/challenges - authenticated users can read all missions
-    // Admin/create permission for creating missions
     match /missions/{missionId} {
       allow read: if true; // Allow public access to view missions
-      allow create: if request.auth != null;
-      allow update: if request.auth != null;
-      allow delete: if request.auth != null;
+      allow create, update, delete: if false; // Admin managed
     }
 
     // User mission progress - users can only manage their own progress
@@ -267,9 +264,8 @@ service cloud.firestore {
     // Location images/photos - allow public read, authenticated write
     match /location_images/{imageId} {
       allow read: if true;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && resource.data.uploadedBy == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.uploadedBy == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.uploadedBy == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.uploadedBy == request.auth.uid;
     }
   }
 }

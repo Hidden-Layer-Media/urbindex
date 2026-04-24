@@ -32,6 +32,8 @@ class UrbindexApp {
     this.authAttempts = new Map();
     this.maxAttempts = 5;
     this.attemptWindow = 15 * 60 * 1000;
+    this.unsubLocations = null;
+    this.unsubActivity = null;
   }
 
   async init() {

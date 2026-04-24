@@ -1,8 +1,8 @@
 {
   "name": "urbindex",
-  "version": "1.0.0",
-  "description": "A Progressive Web App for urban exploration mapping with a cyberpunk aesthetic",
-  "main": "final.html",
+  "version": "1.1.0",
+  "description": "Secure Progressive Web App for urban exploration mapping",
+  "main": "src/index.html",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

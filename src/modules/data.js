@@ -23,7 +23,8 @@ export const dataMethods = {
       this.map.addLayer(this.markerClusterGroup);
     }
 
-    this.db.collection('locations').where('status', '==', 'active').orderBy('createdAt', 'desc').onSnapshot(snap => {
+    this.unsubLocations?.();
+    this.unsubLocations = this.db.collection('locations').where('status', '==', 'active').orderBy('createdAt', 'desc').onSnapshot(snap => {
       this.markerClusterGroup?.clearLayers();
       this.markers.clear();
       const valid = [];
@@ -115,7 +116,8 @@ export const dataMethods = {
   },
 
   loadActivity() {
-    this.db.collection('locations').where('status', '==', 'active').orderBy('createdAt', 'desc').limit(10).onSnapshot(snap => {
+    this.unsubActivity?.();
+    this.unsubActivity = this.db.collection('locations').where('status', '==', 'active').orderBy('createdAt', 'desc').limit(10).onSnapshot(snap => {
       const feed = document.getElementById('activity-feed');
       if (!feed) return;
       if (snap.empty) { feed.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:16px;">No recent activity</div>'; return; }

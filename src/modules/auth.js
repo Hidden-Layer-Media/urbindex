@@ -364,6 +364,8 @@ export const authMethods = {
     clearTimeout(this.sessionWarningTimer); this.sessionWarningTimer = null;
     clearInterval(this.sessionCountdownTimer); this.sessionCountdownTimer = null;
     clearInterval(this.sessionRefreshTimer); this.sessionRefreshTimer = null;
+    this.unsubLocations?.(); this.unsubLocations = null;
+    this.unsubActivity?.(); this.unsubActivity = null;
     this.hideSessionWarning();
   },
 
