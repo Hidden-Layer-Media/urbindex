@@ -150,33 +150,48 @@ export const socialMethods = {
   renderSocialFeed(activities) {
     const container = document.getElementById('social-feed-container');
     if (!container) return;
-    if (!activities?.length) { container.innerHTML = '<div style="color:var(--text-muted);padding:32px;text-align:center;">[ EMPTY FEED ] — No posts match the current filter.</div>'; return; }
+    if (!activities?.length) {
+      container.innerHTML = '<div class="empty-state">No posts match the current filter.</div>';
+      return;
+    }
     container.innerHTML = '';
     activities.forEach(item => {
-      const el = document.createElement('div'); el.className = 'panel activity-card'; el.dataset.postId = item.id;
+      const el = document.createElement('div');
+      el.className = 'social-card';
+      el.dataset.postId = item.id;
       const ts = item.createdAt?.toDate ? this.timeAgo(item.createdAt.toDate()) : 'Recently';
-      const tags = (item.tags || []).map(t => `<span class="tag">#${this.escapeHtml(t)}</span>`).join('');
+      const tags = (item.tags || []).map(t => `<span class="tag" onclick="app.applyTagFilter('${this.escapeHtml(t)}')">#${this.escapeHtml(t)}</span>`).join(' ');
+      
       el.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
+        <div class="social-card-header">
           <div>
-            <strong style="color:var(--yellow);">${this.escapeHtml(item.displayName || 'Explorer')}</strong>
-            <span style="color:var(--text-muted);font-size:0.8rem;margin-left:8px;">// ${ts}</span>
+            <span class="social-card-user">${this.escapeHtml(item.displayName || 'Explorer')}</span>
+            <span class="social-card-time">// ${ts}</span>
           </div>
-          ${this.currentUser && item.createdBy !== this.currentUser.uid ? `<button class="btn" style="font-size:0.75rem;padding:2px 8px;" id="follow-feed-${item.createdBy}" onclick="app.toggleFollowFromFeed('${item.createdBy}')">Follow</button>` : ''}
+          ${this.currentUser && item.createdBy !== this.currentUser.uid ? 
+            `<button class="btn btn-sm" id="follow-feed-${item.createdBy}" onclick="app.toggleFollowFromFeed('${item.createdBy}')">Follow</button>` : ''}
         </div>
-        <p style="margin-bottom:8px;">${this.escapeHtml(item.body || '')}</p>
-        ${tags ? `<div style="margin-bottom:8px;">${tags}</div>` : ''}
-        <div style="display:flex;gap:12px;align-items:center;">
-          <button class="btn" style="font-size:0.8rem;" id="like-btn-${item.id}" onclick="app.togglePostLike('${item.id}')"><i class="fas fa-heart"></i> <span id="like-count-${item.id}">${item.likeCount || 0}</span></button>
-          <button class="btn" style="font-size:0.8rem;" onclick="app.togglePostComments('${item.id}')"><i class="fas fa-comment"></i> Comments</button>
-          ${item.locationId ? `<button class="btn" style="font-size:0.8rem;" onclick="app.viewPostLocation('${item.id}','${item.locationId}')"><i class="fas fa-map-marker-alt"></i> View Location</button>` : ''}
+        <div class="social-card-content">${this.escapeHtml(item.body || '')}</div>
+        ${tags ? `<div style="margin-bottom:12px; display:flex; flex-wrap:wrap; gap:4px;">${tags}</div>` : ''}
+        <div class="social-card-footer">
+          <button class="social-action" id="like-btn-${item.id}" onclick="app.togglePostLike('${item.id}')">
+            <i class="fas fa-heart"></i> <span id="like-count-${item.id}">${item.likeCount || 0}</span>
+          </button>
+          <button class="social-action" onclick="app.togglePostComments('${item.id}')">
+            <i class="fas fa-comment"></i> Comments
+          </button>
+          ${item.locationId ? `
+            <button class="social-action" onclick="app.viewPostLocation('${item.id}','${item.locationId}')">
+              <i class="fas fa-map-marker-alt"></i> Location
+            </button>` : ''}
         </div>
-        <div id="comments-panel-${item.id}" style="display:none;margin-top:12px;">
-          <div id="post-comments-${item.id}" style="color:var(--text-muted);">Loading comments...</div>
-          ${this.currentUser ? `<div style="display:flex;gap:8px;margin-top:8px;">
-            <input class="input" id="comment-field-${item.id}" placeholder="Add a comment..." style="flex:1;">
-            <button class="btn btn-primary" onclick="app.submitPostComment('${item.id}')"><i class="fas fa-paper-plane"></i></button>
-          </div>` : ''}
+        <div id="comments-panel-${item.id}" style="display:none; margin-top:16px; border-top: 1px dashed var(--border-dim); padding-top:12px;">
+          <div id="post-comments-${item.id}" class="card-meta">Loading comments...</div>
+          ${this.currentUser ? `
+            <div style="display:flex; gap:8px; margin-top:12px;">
+              <input class="form-control" id="comment-field-${item.id}" placeholder="Add intel..." style="font-size:0.8rem;">
+              <button class="btn btn-primary btn-sm" onclick="app.submitPostComment('${item.id}')"><i class="fas fa-paper-plane"></i></button>
+            </div>` : ''}
         </div>`;
       container.appendChild(el);
     });
@@ -189,7 +204,7 @@ export const socialMethods = {
       const likedIds = new Set(likeSnap.docs.map(d => d.data().postId));
       items.forEach(item => {
         const btn = document.getElementById(`like-btn-${item.id}`);
-        if (btn && likedIds.has(item.id)) btn.style.color = 'var(--red-alert)';
+        if (btn && likedIds.has(item.id)) btn.classList.add('active');
       });
     } catch {}
   },
@@ -243,12 +258,12 @@ export const socialMethods = {
         await ref.delete();
         await this.db.collection('forum').doc(postId).update({ likeCount: firebase.firestore.FieldValue.increment(-1) });
         if (countEl) countEl.textContent = Math.max(0, parseInt(countEl.textContent) - 1);
-        if (btn) btn.style.color = '';
+        if (btn) btn.classList.remove('active');
       } else {
         await ref.set({ userId: this.currentUser.uid, postId, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
         await this.db.collection('forum').doc(postId).update({ likeCount: firebase.firestore.FieldValue.increment(1) });
         if (countEl) countEl.textContent = parseInt(countEl.textContent) + 1;
-        if (btn) btn.style.color = 'var(--red-alert)';
+        if (btn) btn.classList.add('active');
       }
     } catch { this.showToast('Failed to update like', 'error'); }
     finally { this.activeOperations.delete(opKey); }

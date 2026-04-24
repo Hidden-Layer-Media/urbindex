@@ -34,6 +34,8 @@ export const utilsMethods = {
 
   showError(message) {
     this.showToast(message, 'error');
+    document.body.classList.add('glitch-error');
+    setTimeout(() => document.body.classList.remove('glitch-error'), 500);
   },
 
   showToast(message, type = 'info', duration = 3000) {
@@ -42,7 +44,7 @@ export const utilsMethods = {
 
     const icons = { error: 'fa-exclamation-circle', success: 'fa-check-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
     const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
+    toast.className = `toast ${type}${type === 'error' ? ' glitch-error' : ''}`;
     toast.setAttribute('role', 'alert');
     toast.innerHTML = `
       <i class="fas ${icons[type] || icons.info}" aria-hidden="true"></i>
@@ -89,5 +91,14 @@ export const utilsMethods = {
       if (t[i] === q[qi]) qi++;
     }
     return qi === q.length;
+  },
+
+  async typeWriter(element, text, speed = 50) {
+    if (!element) return;
+    element.textContent = '';
+    for (let i = 0; i < text.length; i++) {
+      element.textContent += text.charAt(i);
+      await new Promise(resolve => setTimeout(resolve, speed));
+    }
   },
 };

@@ -19,6 +19,22 @@ body {
   /* subtle scanline overlay */
   background-image: var(--scanline);
   background-attachment: fixed;
+  position: relative;
+}
+
+body::after {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+              linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  z-index: 9999;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
 }
 
 /* ── Accessibility ── */
@@ -112,9 +128,24 @@ code, pre {
 }
 
 /* ── Loading states ── */
+.loading {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .loading::after {
-  content: '...';
-  animation: blink 1.2s step-end infinite;
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: var(--yellow-muted);
+  animation: blink 0.8s step-end infinite;
 }
 
 @keyframes blink {

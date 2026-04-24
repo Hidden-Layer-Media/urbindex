@@ -238,6 +238,95 @@ textarea.form-control {
 .toast.warning { border-left-color: var(--amber); }
 .toast.info    { border-left-color: var(--blue-cold); }
 
+/* ══════════════════════════════════════
+   SOCIAL CARDS
+══════════════════════════════════════ */
+.social-card {
+  background: var(--black-panel);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 12px;
+  position: relative;
+  transition: var(--transition);
+}
+
+.social-card:hover {
+  border-color: var(--yellow-dim);
+  background: var(--black-raised);
+}
+
+.social-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.social-card-user {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--yellow);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.social-card-time {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.social-card-content {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  margin-bottom: 12px;
+  white-space: pre-wrap;
+}
+
+.social-card-footer {
+  display: flex;
+  gap: 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-dim);
+}
+
+.social-action {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: var(--transition);
+}
+
+.social-action:hover {
+  color: var(--yellow);
+}
+
+.social-action.active {
+  color: var(--yellow);
+  text-shadow: var(--glow-yellow);
+}
+
+/* ══════════════════════════════════════
+   GLITCH EFFECT
+══════════════════════════════════════ */
+.glitch-error {
+  animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+}
+
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+  100% { transform: translate(0); }
+}
+
 @keyframes toast-in {
   from { opacity: 0; transform: translateX(20px); }
   to   { opacity: 1; transform: translateX(0); }

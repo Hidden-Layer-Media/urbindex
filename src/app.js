@@ -47,6 +47,9 @@ class UrbindexApp {
       this.initRateLimiting();
       this.loadData();
 
+      const logoTag = document.querySelector('.logo-tag');
+      if (logoTag) this.typeWriter(logoTag, '// urban exploration network', 40);
+
       setTimeout(() => {
         const ls = document.getElementById('loading-screen');
         if (ls) { ls.style.opacity = '0'; ls.style.pointerEvents = 'none'; setTimeout(() => ls.classList.add('hidden'), 500); }
