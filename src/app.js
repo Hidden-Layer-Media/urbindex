@@ -8,6 +8,7 @@ import { socialMethods } from './modules/social.js';
 import { profileMethods } from './modules/profile.js';
 import { dataMethods } from './modules/data.js';
 import { settingsMethods } from './modules/settings.js';
+import { forumMethods } from './modules/forum.js';
 
 class UrbindexApp {
   constructor() {
@@ -73,6 +74,7 @@ Object.assign(UrbindexApp.prototype,
   profileMethods,
   dataMethods,
   settingsMethods,
+  forumMethods,
 );
 
 export { UrbindexApp };

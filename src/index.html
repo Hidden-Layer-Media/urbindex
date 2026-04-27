@@ -54,9 +54,8 @@
     <button class="nav-btn active" type="button" data-view="map"><i class="fas fa-map"></i> Map</button>
     <button class="nav-btn" type="button" data-view="locations"><i class="fas fa-map-marker-alt"></i> Locations</button>
     <button class="nav-btn" type="button" data-view="social"><i class="fas fa-users"></i> Social</button>
+    <button class="nav-btn" type="button" data-view="forum"><i class="fas fa-comments"></i> Forum</button>
     <button class="nav-btn" type="button" data-view="profile"><i class="fas fa-user"></i> Profile</button>
-    <button class="nav-btn" type="button" data-view="missions"><i class="fas fa-trophy"></i> Missions</button>
-    <button class="nav-btn" type="button" data-view="routes"><i class="fas fa-route"></i> Routes</button>
     <button class="nav-btn" type="button" data-view="groups"><i class="fas fa-layer-group"></i> Groups</button>
     <button class="nav-btn" type="button" data-view="notifications">
       <i class="fas fa-bell"></i> Alerts
@@ -82,7 +81,7 @@
           <div class="quick-actions">
             <button class="btn btn-primary btn-sm" onclick="app.showAddLocationModal()"><i class="fas fa-plus"></i> Drop Location</button>
             <button class="btn btn-sm" id="recenter-btn"><i class="fas fa-crosshairs"></i> <span>My Location</span></button>
-            <button class="btn btn-sm" onclick="app.showView('missions')"><i class="fas fa-trophy"></i> Missions</button>
+            <button class="btn btn-sm" onclick="app.showView('forum')"><i class="fas fa-comments"></i> Forum</button>
             <button class="btn btn-sm" onclick="app.createNewPost()"><i class="fas fa-bullhorn"></i> Post Intel</button>
           </div>
         </div>
@@ -160,14 +159,9 @@
       <div id="profile-content"></div>
     </div>
 
-    <!-- MISSIONS VIEW -->
-    <div class="view" id="missions-view">
-      <div id="missions-view-content"></div>
-    </div>
-
-    <!-- ROUTES VIEW -->
-    <div class="view" id="routes-view">
-      <div id="routes-view-content"></div>
+    <!-- FORUM VIEW -->
+    <div class="view" id="forum-view">
+      <div id="forum-view-content"></div>
     </div>
 
     <!-- GROUPS VIEW -->
@@ -263,65 +257,103 @@
 
 <!-- Auth Modal -->
 <div id="auth-modal" class="modal-overlay" onclick="if(event.target===this)app.hideAuthModal()">
-  <div class="modal" onclick="event.stopPropagation()">
-    <button class="modal-close" onclick="app.hideAuthModal()" aria-label="Close">&times;</button>
-    <div class="modal-header"><h3>// Access Terminal</h3></div>
-    <div class="tabs" style="display:flex;gap:0;margin-bottom:16px;border-bottom:1px solid var(--border);">
-      <button class="auth-tab active" data-tab="signin" style="flex:1;padding:8px;background:none;border:none;cursor:pointer;color:var(--yellow);border-bottom:2px solid var(--yellow);">Sign In</button>
-      <button class="auth-tab" data-tab="signup" style="flex:1;padding:8px;background:none;border:none;cursor:pointer;color:var(--text-muted);">Register</button>
+  <div class="modal auth-terminal" onclick="event.stopPropagation()">
+
+    <!-- Terminal titlebar -->
+    <div class="auth-titlebar">
+      <div class="auth-titlebar-dots"><span></span><span></span><span></span></div>
+      <span class="auth-titlebar-text">URBINDEX :: ACCESS TERMINAL</span>
+      <button class="auth-close-btn" onclick="app.hideAuthModal()" aria-label="Close">[X]</button>
+    </div>
+    <div class="auth-scanline-bar"></div>
+
+    <!-- Tab switcher -->
+    <div class="auth-tab-bar">
+      <button class="auth-tab active" data-tab="signin" aria-selected="true">[ SIGN IN ]</button>
+      <button class="auth-tab" data-tab="signup" aria-selected="false">[ REGISTER ]</button>
     </div>
 
     <!-- Sign In Form -->
-    <div class="auth-form active" id="signin-form">
-      <form id="signin-form-element">
-        <div class="form-group">
-          <label class="form-label" for="signin-email">Email</label>
-          <input class="input" type="email" id="signin-email" required placeholder="user@example.com" autocomplete="email">
-          <div class="field-error" id="signin-email-error" style="display:none;color:var(--red-alert);font-size:0.8rem;margin-top:2px;"></div>
+    <div class="auth-form active" id="signin-form" aria-hidden="false">
+      <form id="signin-form-element" class="auth-form-body">
+        <div class="auth-prompt-line">
+          <span class="auth-prompt-label">URBINDEX://auth</span>
+          <span class="auth-blink">_</span>
         </div>
         <div class="form-group">
-          <label class="form-label" for="signin-password">Password</label>
-          <input class="input" type="password" id="signin-password" required placeholder="••••••••" autocomplete="current-password">
+          <label class="form-label auth-label" for="signin-email">EMAIL_ADDR:</label>
+          <div class="auth-input-wrap">
+            <span class="auth-prompt-char">&gt;</span>
+            <input class="input auth-input" type="email" id="signin-email" required placeholder="user@domain.net" autocomplete="email">
+          </div>
+          <div class="field-error" id="signin-email-error" style="display:none;"></div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
-          <button type="submit" class="btn btn-primary"><i class="fas fa-terminal"></i> Connect</button>
-          <button type="button" class="btn" id="google-signin-btn"><i class="fab fa-google"></i> Google</button>
-          <button type="button" class="btn" id="github-signin-btn"><i class="fab fa-github"></i> GitHub</button>
-          <button type="button" class="btn" onclick="app.signInAnonymously()"><i class="fas fa-ghost"></i> Browse Anonymously</button>
-          <button type="button" class="btn btn-sm" style="align-self:flex-start;" onclick="app.showPasswordResetModal()">Forgot password?</button>
+        <div class="form-group">
+          <label class="form-label auth-label" for="signin-password">PASSKEY:</label>
+          <div class="auth-input-wrap">
+            <span class="auth-prompt-char">&gt;</span>
+            <input class="input auth-input" type="password" id="signin-password" required placeholder="••••••••" autocomplete="current-password">
+          </div>
+        </div>
+        <div class="auth-actions">
+          <button type="submit" class="btn btn-primary auth-submit-btn"><i class="fas fa-terminal"></i> CONNECT</button>
+          <button type="button" class="auth-forgot-link" onclick="app.showPasswordResetModal()">// forgot passkey?</button>
+        </div>
+        <div class="auth-divider"><span>// or authenticate via</span></div>
+        <div class="auth-social-row">
+          <button type="button" class="auth-social-btn" id="google-signin-btn"><i class="fab fa-google"></i> GOOGLE</button>
+          <button type="button" class="auth-social-btn" id="github-signin-btn"><i class="fab fa-github"></i> GITHUB</button>
+          <button type="button" class="auth-social-btn" onclick="app.signInAnonymously()"><i class="fas fa-ghost"></i> ANON</button>
         </div>
       </form>
     </div>
 
     <!-- Sign Up Form -->
-    <div class="auth-form" id="signup-form">
-      <form id="signup-form-element">
-        <div class="form-group">
-          <label class="form-label" for="signup-email">Email</label>
-          <input class="input" type="email" id="signup-email" required placeholder="user@example.com" autocomplete="email">
-          <div class="field-error" id="signup-email-error" style="display:none;color:var(--red-alert);font-size:0.8rem;margin-top:2px;"></div>
+    <div class="auth-form" id="signup-form" aria-hidden="true">
+      <form id="signup-form-element" class="auth-form-body">
+        <div class="auth-prompt-line">
+          <span class="auth-prompt-label">URBINDEX://register</span>
+          <span class="auth-blink">_</span>
         </div>
         <div class="form-group">
-          <label class="form-label" for="signup-password">Password</label>
-          <input class="input" type="password" id="signup-password" required placeholder="Min 8 chars..." autocomplete="new-password">
-          <div class="field-error" id="signup-password-error" style="display:none;color:var(--red-alert);font-size:0.8rem;margin-top:2px;"></div>
-          <div style="margin-top:6px;height:4px;background:var(--black-border);">
-            <div id="password-strength-fill" class="strength-fill" style="height:100%;width:0%;transition:width 0.2s;"></div>
+          <label class="form-label auth-label" for="signup-email">EMAIL_ADDR:</label>
+          <div class="auth-input-wrap">
+            <span class="auth-prompt-char">&gt;</span>
+            <input class="input auth-input" type="email" id="signup-email" required placeholder="user@domain.net" autocomplete="email">
           </div>
-          <div id="password-strength-text" style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">Password strength: Not entered</div>
+          <div class="field-error" id="signup-email-error" style="display:none;"></div>
         </div>
         <div class="form-group">
-          <label class="form-label" for="signup-confirm-password">Confirm Password</label>
-          <input class="input" type="password" id="signup-confirm-password" required placeholder="Repeat password" autocomplete="new-password">
-          <div class="field-error" id="signup-confirm-error" style="display:none;color:var(--red-alert);font-size:0.8rem;margin-top:2px;"></div>
+          <label class="form-label auth-label" for="signup-password">NEW PASSKEY:</label>
+          <div class="auth-input-wrap">
+            <span class="auth-prompt-char">&gt;</span>
+            <input class="input auth-input" type="password" id="signup-password" required placeholder="min 8 chars" autocomplete="new-password">
+          </div>
+          <div class="field-error" id="signup-password-error" style="display:none;"></div>
+          <div class="auth-strength-bar">
+            <div id="password-strength-fill" class="strength-fill" style="width:0%;"></div>
+          </div>
+          <div id="password-strength-text" class="auth-strength-text">STRENGTH: ---</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
-          <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Register</button>
-          <button type="button" class="btn" id="google-signup-btn"><i class="fab fa-google"></i> Google</button>
-          <button type="button" class="btn" id="github-signup-btn"><i class="fab fa-github"></i> GitHub</button>
+        <div class="form-group">
+          <label class="form-label auth-label" for="signup-confirm-password">CONFIRM:</label>
+          <div class="auth-input-wrap">
+            <span class="auth-prompt-char">&gt;</span>
+            <input class="input auth-input" type="password" id="signup-confirm-password" required placeholder="repeat passkey" autocomplete="new-password">
+          </div>
+          <div class="field-error" id="signup-confirm-error" style="display:none;"></div>
+        </div>
+        <div class="auth-actions">
+          <button type="submit" class="btn btn-primary auth-submit-btn"><i class="fas fa-user-plus"></i> REGISTER</button>
+        </div>
+        <div class="auth-divider"><span>// or register via</span></div>
+        <div class="auth-social-row">
+          <button type="button" class="auth-social-btn" id="google-signup-btn"><i class="fab fa-google"></i> GOOGLE</button>
+          <button type="button" class="auth-social-btn" id="github-signup-btn"><i class="fab fa-github"></i> GITHUB</button>
         </div>
       </form>
     </div>
+
   </div>
 </div>
 

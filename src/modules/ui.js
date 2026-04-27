@@ -39,8 +39,7 @@ export const uiMethods = {
     else if (viewName === 'profile') this.loadProfile();
     else if (viewName === 'settings') this.showSettings();
     else if (viewName === 'social') this.showSocialFeed();
-    else if (viewName === 'missions') this.showMissions();
-    else if (viewName === 'routes') this.showRoutes();
+    else if (viewName === 'forum') this.showForum();
     else if (viewName === 'groups') this.showGroups();
     else if (viewName === 'notifications') this.showNotifications();
   },

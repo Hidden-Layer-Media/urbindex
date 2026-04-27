@@ -110,13 +110,41 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     
-    // Forum posts - authenticated users can read all forum posts
-    // Users can only create, update, or delete their own forum posts
+    // Legacy forum collection
     match /forum/{postId} {
-      allow read: if true; // Allow public access to view forum posts
+      allow read: if true;
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
       allow update: if request.auth != null && resource.data.createdBy == request.auth.uid;
       allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+    }
+
+    // Forum threads
+    match /forum_threads/{threadId} {
+      allow read: if true;
+      allow create: if request.auth != null && !request.auth.token.firebase.sign_in_provider.matches('anonymous') &&
+                    request.resource.data.authorId == request.auth.uid &&
+                    request.resource.data.keys().hasAll(['boardId', 'title', 'authorId', 'authorName']) &&
+                    request.resource.data.title.size() >= 1 &&
+                    request.resource.data.title.size() <= 120;
+      allow update: if request.auth != null && (
+                    resource.data.authorId == request.auth.uid ||
+                    // allow postCount / lastPost metadata updates from any auth'd user (reply flow)
+                    request.resource.data.diff(resource.data).affectedKeys()
+                      .hasOnly(['postCount', 'lastPostAt', 'lastPostAuthorName'])
+                    );
+      allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+    }
+
+    // Forum posts
+    match /forum_posts/{postId} {
+      allow read: if true;
+      allow create: if request.auth != null && !request.auth.token.firebase.sign_in_provider.matches('anonymous') &&
+                    request.resource.data.authorId == request.auth.uid &&
+                    request.resource.data.keys().hasAll(['threadId', 'boardId', 'content', 'authorId']) &&
+                    request.resource.data.content.size() >= 1 &&
+                    request.resource.data.content.size() <= 10000;
+      allow update: if false;
+      allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
     }
     
     // Territories - authenticated users can read all territories
