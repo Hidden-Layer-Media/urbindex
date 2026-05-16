@@ -311,9 +311,33 @@ textarea.form-control {
   text-shadow: var(--glow-yellow);
 }
 
-/* ══════════════════════════════════════
-   GLITCH EFFECT
-══════════════════════════════════════ */
+/* Map Pins */
+.geocoded-marker-inner {
+  background: var(--yellow);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.user-marker-inner {
+  background: var(--green-term);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 8px rgba(0,255,65,0.6);
+}
+
+.risk-marker-inner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--black);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
 .glitch-error {
   animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
 }

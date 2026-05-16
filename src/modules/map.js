@@ -61,7 +61,7 @@ export const mapMethods = {
     this.tempMarker = L.marker([lat, lng], {
       icon: L.divIcon({
         className: 'geocoded-marker',
-        html: '<div style="background:var(--yellow);width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.5);"></div>',
+        html: '<div class="geocoded-marker-inner"></div>',
         iconSize: [12, 12], iconAnchor: [6, 6],
       }),
     }).addTo(this.map);
@@ -216,7 +216,7 @@ export const mapMethods = {
       this.tempMarker = L.marker([lat, lng], {
         icon: L.divIcon({
           className: 'geocoded-marker',
-          html: '<div style="background:var(--yellow);width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.5);"></div>',
+          html: '<div class="geocoded-marker-inner"></div>',
           iconSize: [12, 12], iconAnchor: [6, 6],
         }),
       }).addTo(this.map);
@@ -260,7 +260,7 @@ export const mapMethods = {
     const marker = L.marker([lat, lng], {
       icon: L.divIcon({
         className: 'custom-location-marker',
-        html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;border:2px solid var(--black);box-shadow:0 2px 6px rgba(0,0,0,0.5);"></div>`,
+        html: `<div class="risk-marker-inner" style="background:${color};"></div>`,
         iconSize: [14, 14], iconAnchor: [7, 7],
       }),
     })
