@@ -25,11 +25,17 @@ fi
 echo ""
 echo "✅ Authenticated with Firebase"
 echo ""
-echo "Deploying to Firebase Hosting..."
-echo ""
+# Use environment variable if set, otherwise use default from .firebaserc
+PROJECT_ID=${FIREBASE_PROJECT:-$(firebase target:list 2>/dev/null | grep -o 'urbindex-[a-z0-9]*' | head -1)}
 
-# Deploy to Firebase Hosting
-firebase deploy --only hosting --project urbindex-d69e1
+# If still not found, just use the command without flag (uses .firebaserc default)
+if [ -z "$PROJECT_ID" ]; then
+    echo "Deploying to default project..."
+    firebase deploy --only hosting
+else
+    echo "Deploying to project: $PROJECT_ID"
+    firebase deploy --only hosting --project "$PROJECT_ID"
+fi
 
 if [ $? -eq 0 ]; then
     echo ""

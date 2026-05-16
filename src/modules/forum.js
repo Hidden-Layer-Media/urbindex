@@ -235,7 +235,7 @@ export const forumMethods = {
 
   async _submitNewThread() {
     if (!this.currentUser || this.currentUser.isAnonymous) return;
-    const { boardId, boardName } = this._forumCtx;
+    const { boardId } = this._forumCtx;
     const titleEl = document.getElementById('forum-new-title');
     const bodyEl  = document.getElementById('forum-new-body');
     const title   = titleEl?.value.trim();
@@ -251,33 +251,40 @@ export const forumMethods = {
     try {
       const authorName = this.currentUser.displayName || this.currentUser.email?.split('@')[0] || 'anonymous';
       const now = firebase.firestore.FieldValue.serverTimestamp();
+      let newThreadId;
 
-      const threadRef = await this.db.collection('forum_threads').add({
-        boardId,
-        title:               this.sanitizeInput(title),
-        authorId:            this.currentUser.uid,
-        authorName:          this.sanitizeInput(authorName),
-        createdAt:           now,
-        postCount:           1,
-        lastPostAt:          now,
-        lastPostAuthorName:  this.sanitizeInput(authorName),
-      });
+      await this.db.runTransaction(async (transaction) => {
+        const threadRef = this.db.collection('forum_threads').doc();
+        newThreadId = threadRef.id;
+        
+        transaction.set(threadRef, {
+          boardId,
+          title:               this.sanitizeInput(title),
+          authorId:            this.currentUser.uid,
+          authorName:          this.sanitizeInput(authorName),
+          createdAt:           now,
+          postCount:           1,
+          lastPostAt:          now,
+          lastPostAuthorName:  this.sanitizeInput(authorName),
+        });
 
-      await this.db.collection('forum_posts').add({
-        threadId:   threadRef.id,
-        boardId,
-        content:    this.sanitizeInput(body),
-        authorId:   this.currentUser.uid,
-        authorName: this.sanitizeInput(authorName),
-        createdAt:  now,
-        postNumber: 1,
-        isOp:       true,
+        const postRef = this.db.collection('forum_posts').doc();
+        transaction.set(postRef, {
+          threadId:   newThreadId,
+          boardId,
+          content:    this.sanitizeInput(body),
+          authorId:   this.currentUser.uid,
+          authorName: this.sanitizeInput(authorName),
+          createdAt:  now,
+          postNumber: 1,
+          isOp:       true,
+        });
       });
 
       this.showToast('Thread posted!', 'success');
-      this._forumCtx.threadId    = threadRef.id;
+      this._forumCtx.threadId    = newThreadId;
       this._forumCtx.threadTitle = title;
-      this.showForumThread(threadRef.id);
+      this.showForumThread(newThreadId);
     } catch (e) {
       this.showToast('Failed to post thread', 'error');
       if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Post Thread'; }
@@ -389,25 +396,31 @@ export const forumMethods = {
     try {
       const authorName = this.currentUser.displayName || this.currentUser.email?.split('@')[0] || 'anonymous';
       const now = firebase.firestore.FieldValue.serverTimestamp();
+      const threadRef = this.db.collection('forum_threads').doc(threadId);
 
-      const postsSnap = await this.db.collection('forum_posts').where('threadId', '==', threadId).get();
-      const postNumber = postsSnap.size + 1;
+      await this.db.runTransaction(async (transaction) => {
+        const threadDoc = await transaction.get(threadRef);
+        if (!threadDoc.exists) throw new Error('Thread does not exist');
+        
+        const newPostCount = (threadDoc.data().postCount || 1) + 1;
+        const postRef = this.db.collection('forum_posts').doc();
+        
+        transaction.set(postRef, {
+          threadId,
+          boardId:    boardId || '',
+          content:    this.sanitizeInput(content),
+          authorId:   this.currentUser.uid,
+          authorName: this.sanitizeInput(authorName),
+          createdAt:  now,
+          postNumber: newPostCount,
+          isOp:       false,
+        });
 
-      await this.db.collection('forum_posts').add({
-        threadId,
-        boardId:    boardId || '',
-        content:    this.sanitizeInput(content),
-        authorId:   this.currentUser.uid,
-        authorName: this.sanitizeInput(authorName),
-        createdAt:  now,
-        postNumber,
-        isOp:       false,
-      });
-
-      await this.db.collection('forum_threads').doc(threadId).update({
-        postCount:          firebase.firestore.FieldValue.increment(1),
-        lastPostAt:         now,
-        lastPostAuthorName: this.sanitizeInput(authorName),
+        transaction.update(threadRef, {
+          postCount:          newPostCount,
+          lastPostAt:         now,
+          lastPostAuthorName: this.sanitizeInput(authorName),
+        });
       });
 
       if (bodyEl) bodyEl.value = '';

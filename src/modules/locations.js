@@ -47,7 +47,7 @@ export const locationsMethods = {
     if (name && name.length > 100) errs.push('Location name must be less than 100 characters');
     if (description && description.length < 10) errs.push('Description must be at least 10 characters');
     if (description && description.length > 1000) errs.push('Description must be less than 1000 characters');
-    if (name && !/^[a-zA-Z0-9\s\-_.,!?()\[\]]+$/.test(name)) errs.push('Location name contains invalid characters');
+    if (name && !/^[a-zA-Z0-9\s\-_.,!?()[\]]+$/.test(name)) errs.push('Location name contains invalid characters');
 
     const existingCoords = (() => { try { const r = e.target.dataset.originalCoordinates; return r ? JSON.parse(r) : null; } catch { return null; } })();
     const coords = this.selectedLatLng ? [this.selectedLatLng.lat, this.selectedLatLng.lng] : existingCoords;
@@ -269,9 +269,30 @@ export const locationsMethods = {
   async rateLocation(locationId, value) {
     if (!this.currentUser) { this.showToast('Sign in to rate locations', 'warning'); return; }
     try {
-      const ref = this.db.collection('ratings').doc(`${this.currentUser.uid}_${locationId}`);
-      await ref.set({ userId: this.currentUser.uid, locationId, value, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      const ratingRef = this.db.collection('ratings').doc(`${this.currentUser.uid}_${locationId}`);
+      const locationRef = this.db.collection('locations').doc(locationId);
+
+      await this.db.runTransaction(async (transaction) => {
+        const ratingDoc = await transaction.get(ratingRef);
+        const oldValue = ratingDoc.exists ? (ratingDoc.data().value || 0) : 0;
+        const delta = value - oldValue;
+
+        transaction.set(ratingRef, {
+          userId: this.currentUser.uid,
+          locationId,
+          value,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        if (delta !== 0) {
+          transaction.update(locationRef, {
+            likesCount: firebase.firestore.FieldValue.increment(delta)
+          });
+        }
+      });
+      
       this.loadLocationRating(locationId);
+      this.showToast(value > 0 ? 'Upvoted!' : 'Downvoted', 'success');
     } catch { this.showToast('Failed to rate location', 'error'); }
   },
 
@@ -293,6 +314,9 @@ export const locationsMethods = {
         userId: this.currentUser.uid,
         displayName: this.currentUser.displayName || 'Explorer',
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      await this.db.collection('locations').doc(locationId).update({
+        commentCount: firebase.firestore.FieldValue.increment(1)
       });
       this.loadLocationComments(locationId);
     } catch { this.showToast('Failed to add comment', 'error'); }
@@ -321,12 +345,18 @@ export const locationsMethods = {
     if (this.activeOperations.has(opKey)) return;
     this.activeOperations.add(opKey);
     try {
-      await this.db.collection('location_visits').add({
-        locationId, userId: this.currentUser.uid,
-        displayName: this.currentUser.displayName || 'Explorer',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      const locationRef = this.db.collection('locations').doc(locationId);
+      const visitRef = this.db.collection('location_visits').doc();
+
+      await this.db.runTransaction(async (transaction) => {
+        transaction.set(visitRef, {
+          locationId, userId: this.currentUser.uid,
+          displayName: this.currentUser.displayName || 'Explorer',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        transaction.update(locationRef, { visitCount: firebase.firestore.FieldValue.increment(1) });
       });
-      await this.db.collection('locations').doc(locationId).update({ visitCount: firebase.firestore.FieldValue.increment(1) });
+
       await this.updateUserBadges(this.currentUser.uid, 'check_in');
       this.showToast('Checked in!', 'success');
     } catch { this.showToast('Failed to check in', 'error'); }

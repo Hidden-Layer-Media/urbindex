@@ -31,7 +31,7 @@ service cloud.firestore {
     
     // User profiles - authenticated users can read all profiles, only edit their own
     match /users/{userId} {
-      allow read: if true; // Allow public access to user profiles
+      allow read: if request.auth != null; // Restrict to authenticated users
       allow create: if request.auth != null && request.auth.uid == userId &&
                     request.resource.data.keys().hasAll(['email', 'displayName']) &&
                     isValidEmail(request.resource.data.email) &&
@@ -42,14 +42,14 @@ service cloud.firestore {
                     !request.resource.data.diff(resource.data).affectedKeys().hasAny(['email']) &&
                     (!('displayName' in request.resource.data) || isValidDisplayName(request.resource.data.displayName)) &&
                     !isRateLimited(request.auth.uid);
-      allow delete: if false; // Prevent profile deletion
+      allow delete: if request.auth != null && request.auth.uid == userId; // Allow self-deletion
     }
 
     // User profile extensions - for additional profile data
     match /user_profiles/{userId} {
-      allow read: if true; // Allow public access to user profile extensions
+      allow read: if request.auth != null; // Restrict to authenticated users
       allow create, update: if request.auth != null && request.auth.uid == userId;
-      allow delete: if false;
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
 
     // Locations - authenticated read/write with proper validation
@@ -60,10 +60,16 @@ service cloud.firestore {
                     request.resource.data.keys().hasAll(['name', 'coordinates', 'createdBy']) &&
                     request.resource.data.coordinates is list &&
                     request.resource.data.coordinates.size() == 2;
-      allow update: if request.auth != null && resource.data.createdBy == request.auth.uid &&
-                    // Only allow status changes and content updates
+      allow update: if request.auth != null && (
+                    resource.data.createdBy == request.auth.uid ||
+                    // Allow anyone to update social counters
                     request.resource.data.diff(resource.data).affectedKeys()
-                      .hasOnly(['name', 'description', 'category', 'riskLevel', 'coordinates', 'address', 'tags', 'updatedAt', 'status']);
+                      .hasOnly(['likesCount', 'visitCount', 'commentCount', 'updatedAt'])
+                    ) &&
+                    // If creator is updating, allow all content fields
+                    (resource.data.createdBy != request.auth.uid || 
+                     request.resource.data.diff(resource.data).affectedKeys()
+                      .hasOnly(['name', 'description', 'category', 'riskLevel', 'coordinates', 'address', 'tags', 'updatedAt', 'status', 'likesCount', 'visitCount', 'commentCount']));
       allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
     
@@ -114,7 +120,10 @@ service cloud.firestore {
     match /forum/{postId} {
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
-      allow update: if request.auth != null && resource.data.createdBy == request.auth.uid;
+      allow update: if request.auth != null && (
+                    resource.data.createdBy == request.auth.uid ||
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'commentCount'])
+                    );
       allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
 
@@ -130,7 +139,7 @@ service cloud.firestore {
                     resource.data.authorId == request.auth.uid ||
                     // allow postCount / lastPost metadata updates from any auth'd user (reply flow)
                     request.resource.data.diff(resource.data).affectedKeys()
-                      .hasOnly(['postCount', 'lastPostAt', 'lastPostAuthorName'])
+                      .hasOnly(['postCount', 'lastPostAt', 'lastPostAuthorName', 'likesCount'])
                     );
       allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
     }
@@ -284,9 +293,19 @@ service cloud.firestore {
       allow read: if request.auth != null &&
         (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
       allow create: if request.auth != null && request.resource.data.senderId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.senderId == request.auth.uid;
+      allow update: if request.auth != null && request.resource.data.senderId == request.auth.uid;
       allow delete: if request.auth != null &&
         (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+    }
+
+    // User messages - simple messaging system
+    match /user_messages/{messageId} {
+      allow read: if request.auth != null && 
+        (resource.data.fromUserId == request.auth.uid || resource.data.toUserId == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.fromUserId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.toUserId == request.auth.uid && 
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if request.auth != null && resource.data.fromUserId == request.auth.uid;
     }
 
     // Location images/photos - allow public read, authenticated write

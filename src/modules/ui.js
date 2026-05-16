@@ -1,5 +1,7 @@
 export const uiMethods = {
   initUI() {
+    this._cleanupUIListeners();
+    
     document.querySelectorAll('.nav-btn').forEach(btn => {
       btn.addEventListener('click', () => this.switchView(btn.dataset.view));
     });
@@ -7,18 +9,26 @@ export const uiMethods = {
     const form = document.getElementById('location-form');
     if (form) form.addEventListener('submit', e => this.handleLocationSubmit(e));
 
-    document.getElementById('auth-btn')?.addEventListener('click', e => { e.preventDefault(); this.handleAuth(); });
-    document.getElementById('password-reset-form')?.addEventListener('submit', e => this.handlePasswordReset(e));
-    document.getElementById('edit-profile-form')?.addEventListener('submit', e => this.handleEditProfile(e));
-
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') {
-        this.hideModal();
-        this.hidePasswordResetModal();
-        this.hideAuthModal();
-        this.hideEditProfileModal();
+    this._uiListeners = {
+      authBtn: e => { e.preventDefault(); this.handleAuth(); },
+      pwReset: e => this.handlePasswordReset(e),
+      editProfile: e => this.handleEditProfile(e),
+      globalKeydown: e => {
+        if (e.key === 'Escape') {
+          this.hideModal();
+          this.hidePasswordResetModal();
+          this.hideAuthModal();
+          this.hideEditProfileModal();
+          this.hideUserLocationsModal();
+          document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
+        }
       }
-    });
+    };
+
+    document.getElementById('auth-btn')?.addEventListener('click', this._uiListeners.authBtn);
+    document.getElementById('password-reset-form')?.addEventListener('submit', this._uiListeners.pwReset);
+    document.getElementById('edit-profile-form')?.addEventListener('submit', this._uiListeners.editProfile);
+    document.addEventListener('keydown', this._uiListeners.globalKeydown);
 
     this.initGeocoding();
     this.initKeyboardNavigation();
@@ -28,6 +38,14 @@ export const uiMethods = {
     const fab = document.getElementById('add-location-fab');
     if (fab) fab.addEventListener('click', () => this.showAddLocationModal());
     document.getElementById('recenter-btn')?.addEventListener('click', () => this.recenterToUserLocation());
+  },
+
+  _cleanupUIListeners() {
+    if (!this._uiListeners) return;
+    document.getElementById('auth-btn')?.removeEventListener('click', this._uiListeners.authBtn);
+    document.getElementById('password-reset-form')?.removeEventListener('submit', this._uiListeners.pwReset);
+    document.getElementById('edit-profile-form')?.removeEventListener('submit', this._uiListeners.editProfile);
+    document.removeEventListener('keydown', this._uiListeners.globalKeydown);
   },
 
   showView(viewName) {

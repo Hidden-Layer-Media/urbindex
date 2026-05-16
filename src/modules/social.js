@@ -135,7 +135,7 @@ export const socialMethods = {
       const tag = search.startsWith('#') ? search.slice(1) : null;
       result = result.filter(i => tag ? (i.tags || []).some(t => t.toLowerCase().includes(tag)) : (i.body || '').toLowerCase().includes(search) || (i.displayName || '').toLowerCase().includes(search));
     }
-    result.sort((a, b) => sort === 'popular' ? (b.likeCount || 0) - (a.likeCount || 0) : (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
+    result.sort((a, b) => sort === 'popular' ? (b.likesCount || 0) - (a.likesCount || 0) : (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
     return result;
   },
 
@@ -175,7 +175,7 @@ export const socialMethods = {
         ${tags ? `<div style="margin-bottom:12px; display:flex; flex-wrap:wrap; gap:4px;">${tags}</div>` : ''}
         <div class="social-card-footer">
           <button class="social-action" id="like-btn-${item.id}" onclick="app.togglePostLike('${item.id}')">
-            <i class="fas fa-heart"></i> <span id="like-count-${item.id}">${item.likeCount || 0}</span>
+            <i class="fas fa-heart"></i> <span id="like-count-${item.id}">${item.likesCount || 0}</span>
           </button>
           <button class="social-action" onclick="app.togglePostComments('${item.id}')">
             <i class="fas fa-comment"></i> Comments
@@ -231,7 +231,7 @@ export const socialMethods = {
         body, tags, createdBy: this.currentUser.uid,
         displayName: this.currentUser.displayName || 'Explorer',
         photoURL: this.currentUser.photoURL || null,
-        likeCount: 0, commentCount: 0,
+        likesCount: 0, commentCount: 0,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       });
       if (input) input.value = '';
@@ -250,18 +250,29 @@ export const socialMethods = {
     if (this.activeOperations.has(opKey)) return;
     this.activeOperations.add(opKey);
     try {
-      const ref = this.db.collection('post_likes').doc(`${this.currentUser.uid}_${postId}`);
-      const snap = await ref.get();
+      const likeRef = this.db.collection('post_likes').doc(`${this.currentUser.uid}_${postId}`);
+      const postRef = this.db.collection('forum').doc(postId);
+      let isLiked = false;
+
+      await this.db.runTransaction(async (transaction) => {
+        const likeDoc = await transaction.get(likeRef);
+        isLiked = likeDoc.exists;
+
+        if (isLiked) {
+          transaction.delete(likeRef);
+          transaction.update(postRef, { likesCount: firebase.firestore.FieldValue.increment(-1) });
+        } else {
+          transaction.set(likeRef, { userId: this.currentUser.uid, postId, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+          transaction.update(postRef, { likesCount: firebase.firestore.FieldValue.increment(1) });
+        }
+      });
+
       const countEl = document.getElementById(`like-count-${postId}`);
       const btn = document.getElementById(`like-btn-${postId}`);
-      if (snap.exists) {
-        await ref.delete();
-        await this.db.collection('forum').doc(postId).update({ likeCount: firebase.firestore.FieldValue.increment(-1) });
+      if (isLiked) {
         if (countEl) countEl.textContent = Math.max(0, parseInt(countEl.textContent) - 1);
         if (btn) btn.classList.remove('active');
       } else {
-        await ref.set({ userId: this.currentUser.uid, postId, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-        await this.db.collection('forum').doc(postId).update({ likeCount: firebase.firestore.FieldValue.increment(1) });
         if (countEl) countEl.textContent = parseInt(countEl.textContent) + 1;
         if (btn) btn.classList.add('active');
       }

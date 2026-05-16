@@ -91,17 +91,26 @@ export const authMethods = {
     e.preventDefault();
     const emailEl = document.getElementById('signin-email');
     const passwordEl = document.getElementById('signin-password');
+    const email = emailEl?.value.trim();
     if (!this.validateEmail(emailEl) || !passwordEl.value) {
       this.showToast('Please correct the errors above', 'warning'); return;
     }
+
+    if (!this.checkRateLimit(email)) {
+      this.showToast('Too many sign-in attempts. Please wait a few minutes.', 'error');
+      return;
+    }
+
     const btn = e.target.querySelector('button[type="submit"]');
     const orig = btn.textContent;
     btn.textContent = 'Signing In...'; btn.disabled = true;
     try {
-      await this.auth.signInWithEmailAndPassword(emailEl.value.trim(), passwordEl.value.trim());
+      await this.auth.signInWithEmailAndPassword(email, passwordEl.value.trim());
       this.hideAuthModal();
       this.showToast('Signed in successfully!', 'success');
+      this.authAttempts.delete(email); // Reset on success
     } catch (err) {
+      this.recordAuthAttempt(email);
       const msgs = {
         'auth/user-not-found': 'No account found with this email',
         'auth/wrong-password': 'Incorrect password',
@@ -118,19 +127,28 @@ export const authMethods = {
     e.preventDefault();
     const emailEl = document.getElementById('signup-email');
     const pwEl = document.getElementById('signup-password');
+    const email = emailEl?.value.trim();
     if (!this.validateEmail(emailEl) || !this.validatePassword(pwEl) || !this.validatePasswordConfirmation()) {
       this.showToast('Please correct the errors above', 'warning'); return;
     }
+
+    if (!this.checkRateLimit(email)) {
+      this.showToast('Too many account creation attempts. Please wait a few minutes.', 'error');
+      return;
+    }
+
     const btn = e.target.querySelector('button[type="submit"]');
     const orig = btn.textContent;
     btn.textContent = 'Creating Account...'; btn.disabled = true;
     try {
-      const result = await this.auth.createUserWithEmailAndPassword(emailEl.value.trim(), pwEl.value.trim());
+      const result = await this.auth.createUserWithEmailAndPassword(email, pwEl.value.trim());
       await this.createUserProfile(result.user, 'email');
       await result.user.sendEmailVerification();
       this.hideAuthModal();
       this.showToast('Account created! Please check your email to verify your account.', 'success');
+      this.authAttempts.delete(email); // Reset on success
     } catch (err) {
+      this.recordAuthAttempt(email);
       const msgs = {
         'auth/email-already-in-use': 'An account with this email already exists',
         'auth/invalid-email': 'Invalid email address',

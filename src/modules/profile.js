@@ -143,7 +143,7 @@ export const profileMethods = {
           </section>
         </div>`;
 
-      this.loadUserSocialStats(targetId);
+      this.loadUserSocialStats(targetId, locs);
       this.loadProfilePosts(targetId);
       this.loadProfileComments(targetId);
     } catch { content.innerHTML = '<div class="error">FAILED TO LOAD PROFILE</div>'; }
@@ -192,23 +192,30 @@ export const profileMethods = {
     finally { btn.innerHTML = '<i class="fas fa-save"></i> Save Changes'; btn.disabled = false; }
   },
 
-  async loadUserSocialStats(userId) {
+  async loadUserSocialStats(userId, locations = []) {
     try {
-      const [followers, following, locs] = await Promise.all([
+      const [followers, following, badgesSnap] = await Promise.all([
         this.db.collection('user_followers').where('followingId', '==', userId).get(),
         this.db.collection('user_followers').where('followerId', '==', userId).get(),
-        this.db.collection('locations').where('createdBy', '==', userId).get(),
+        this.db.collection('user_badges').where('userId', '==', userId).get(),
       ]);
-      const locIds = locs.docs.map(d => d.id);
+
       let likes = 0, visits = 0;
-      if (locIds.length) {
-        const [likesSnap, visitsSnap] = await Promise.all([
-          this.db.collection('location_likes').where('locationId', 'in', locIds.slice(0, 10)).get(),
-          this.db.collection('location_visits').where('locationId', 'in', locIds.slice(0, 10)).get(),
-        ]);
-        likes = likesSnap.size; visits = visitsSnap.size;
+      if (locations.length) {
+        locations.forEach(loc => {
+          likes += loc.likesCount || 0;
+          visits += loc.visitCount || 0;
+        });
+      } else {
+        // Fallback if locations weren't passed
+        const locsSnap = await this.db.collection('locations').where('createdBy', '==', userId).where('status', '==', 'active').get();
+        locsSnap.forEach(doc => {
+          const d = doc.data();
+          likes += d.likesCount || 0;
+          visits += d.visitCount || 0;
+        });
       }
-      const badgesSnap = await this.db.collection('user_badges').where('userId', '==', userId).get();
+
       const set = id => document.getElementById(id);
       if (set('profile-followers-count')) set('profile-followers-count').textContent = followers.size;
       if (set('profile-following-count')) set('profile-following-count').textContent = following.size;

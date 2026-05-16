@@ -243,15 +243,46 @@ export const settingsMethods = {
     try {
       const uid = this.currentUser.uid;
       this.showToast('Deleting account data...', 'info');
-      const colls = ['locations','forum','comments','user_followers','user_notifications','user_settings','post_likes','location_likes','location_visits'];
-      for (const c of colls) {
-        for (const field of ['userId', 'createdBy']) {
-          const snap = await this.db.collection(c).where(field, '==', uid).limit(50).get();
-          if (!snap.empty) { const b = this.db.batch(); snap.docs.forEach(d => b.delete(d.ref)); await b.commit(); }
+      
+      const colls = [
+        { name: 'locations', fields: ['createdBy'] },
+        { name: 'forum', fields: ['createdBy'] },
+        { name: 'comments', fields: ['createdBy'] },
+        { name: 'user_followers', fields: ['followerId', 'followingId'] },
+        { name: 'user_notifications', fields: ['userId'] },
+        { name: 'user_settings', fields: ['userId'] },
+        { name: 'post_likes', fields: ['userId'] },
+        { name: 'location_likes', fields: ['userId'] },
+        { name: 'location_visits', fields: ['userId'] },
+        { name: 'user_profiles', fields: ['userId'] },
+        { name: 'user_badges', fields: ['userId'] },
+        { name: 'forum_posts', fields: ['authorId'] },
+        { name: 'forum_threads', fields: ['authorId'] }
+      ];
+
+      for (const coll of colls) {
+        for (const field of coll.fields) {
+          let hasMore = true;
+          while (hasMore) {
+            const snap = await this.db.collection(coll.name).where(field, '==', uid).limit(100).get();
+            if (snap.empty) {
+              hasMore = false;
+            } else {
+              const batch = this.db.batch();
+              snap.docs.forEach(doc => batch.delete(doc.ref));
+              await batch.commit();
+              if (snap.size < 100) hasMore = false;
+            }
+          }
         }
       }
+
+      // Delete the main user document
       await this.db.collection('users').doc(uid).delete();
+      
+      // Delete the Firebase Auth user
       await this.currentUser.delete();
+      
       document.querySelectorAll('.modal').forEach(m => m.remove());
       this.showToast('Account deleted successfully. Goodbye.', 'success');
       setTimeout(() => window.location.reload(), 2000);

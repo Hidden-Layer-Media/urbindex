@@ -16,14 +16,40 @@ export default defineConfig({
       manifest: {
         name: 'Urbindex',
         short_name: 'Urbindex',
-        description: 'Urban Exploration Social Network',
-        theme_color: '#FFD000',
-        background_color: '#000000',
+        description: 'Secure Progressive Web App for urban exploration mapping',
+        theme_color: '#00e5ff',
+        background_color: '#080818',
         display: 'standalone',
+        orientation: 'any',
+        scope: '/',
+        start_url: '/index.html',
         icons: [
-          { src: 'images/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'images/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'images/icons/icon-96x96.png', sizes: '96x96', type: 'image/png', purpose: 'any' },
+          { src: 'images/icons/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+          { src: 'images/icons/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
         ],
+        shortcuts: [
+          {
+            name: 'Add Location',
+            short_name: 'Add',
+            description: 'Quickly add a new exploration location',
+            url: '/index.html?action=add',
+            icons: [{ src: 'images/icons/icon-96x96.png', sizes: '96x96', type: 'image/png' }]
+          },
+          {
+            name: 'View Map',
+            short_name: 'Map',
+            description: 'Open the exploration map',
+            url: '/index.html?view=map',
+            icons: [{ src: 'images/icons/icon-96x96.png', sizes: '96x96', type: 'image/png' }]
+          }
+        ],
+        categories: ['maps', 'social', 'lifestyle', 'navigation', 'travel'],
+        share_target: {
+          action: '/index.html?share',
+          method: 'GET',
+          params: { title: 'title', text: 'text', url: 'url' }
+        }
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
