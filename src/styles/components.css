@@ -507,25 +507,42 @@ select.form-control {
 }
 
 /* ══════════════════════════════════════
-   FAB
+   PROFILE TERMINAL DASHBOARD
 ══════════════════════════════════════ */
-.fab {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-  z-index: 500;
-  border: 2px solid var(--black);
+.profile-dashboard {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  font-family: var(--font-mono);
 }
-.fab:hover { box-shadow: 0 0 16px var(--yellow-glow); }
+
+.data-dump {
+  background: var(--black-panel);
+  border: 1px solid var(--border);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.data-dump-title {
+  color: var(--yellow);
+  font-size: 10px;
+  letter-spacing: 2px;
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 8px;
+}
+
+.terminal-log {
+  background: var(--black);
+  border: 1px solid var(--border);
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  max-height: 400px;
+  overflow-y: auto;
+  color: var(--green-term);
+}
 
 .tag {
   display: inline-flex;

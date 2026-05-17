@@ -72,68 +72,41 @@ export const profileMethods = {
       const galleryHtml = gallery.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">${gallery.map(s => `<div style="border:1px solid var(--border);background:var(--black-panel);padding:4px;"><img src="${this.escapeHtml(s)}" alt="Gallery" style="width:100%;height:120px;object-fit:cover;display:block;"></div>`).join('')}</div>` : `<div style="color:var(--text-muted);">No gallery images yet.</div>`;
 
       content.innerHTML = `
-        <div class="profile-shell">
-          <header class="profile-header">
+        <div class="profile-dashboard">
+          <aside class="data-dump">
             <div class="profile-avatar-lg">${avatar ? `<img src="${this.escapeHtml(avatar)}" alt="${this.escapeHtml(name)}">` : `<span>${this.escapeHtml(name.charAt(0).toUpperCase())}</span>`}</div>
-            <div>
-              <h2 class="profile-name">${this.escapeHtml(name)}</h2>
-              <div class="profile-handle">// @${this.escapeHtml(name.toLowerCase().replace(/\s/g, '_'))}</div>
-            </div>
-            <div class="profile-actions" style="margin-left:auto;">
-              ${isOwn ? `
-                <button class="btn btn-primary" onclick="app.showEditProfile()"><i class="fas fa-edit"></i> Edit</button>
-                <button class="btn" onclick="app.showAddLocationModal()"><i class="fas fa-plus"></i> Add</button>
-              ` : `
-                <button class="btn btn-primary" id="follow-btn-${targetId}" onclick="app.toggleFollow('${targetId}')"><i class="fas fa-user-plus"></i> Follow</button>
-                <button class="btn" onclick="app.messageUser('${targetId}')"><i class="fas fa-envelope"></i> Message</button>
-              `}
-            </div>
-          </header>
-
-          <section class="panel">
-            <h3>// Dossier</h3>
-            ${bioHtml}
-            <div class="meta-chips" style="margin-top:10px;">
-              <span class="chip"><i class="fas fa-calendar-alt"></i> Joined ${joined}</span>
-            </div>
-          </section>
-
-          <section class="profile-stats">
+            <div class="data-dump-title">// USER IDENTITY</div>
+            <h2 class="profile-name">${this.escapeHtml(name)}</h2>
+            <div class="profile-handle">// @${this.escapeHtml(name.toLowerCase().replace(/\s/g, '_'))}</div>
+            
+            <div class="data-dump-title">// CORE STATS</div>
             <div class="profile-stat"><div class="stat-label">Locations</div><div class="stat-value">${total}</div></div>
             <div class="profile-stat"><div class="stat-label">Followers</div><div class="stat-value" id="profile-followers-count">--</div></div>
-            <div class="profile-stat"><div class="stat-label">Following</div><div class="stat-value" id="profile-following-count">--</div></div>
-            <div class="profile-stat"><div class="stat-label">Likes</div><div class="stat-value" id="profile-likes-count">--</div></div>
-            <div class="profile-stat"><div class="stat-label">Visits</div><div class="stat-value" id="profile-visits-count">--</div></div>
-            <div class="profile-stat"><div class="stat-label">Badges</div><div class="stat-value" id="profile-badges-count">--</div></div>
-          </section>
+            <div class="profile-stat"><div class="stat-label">Likes/Visits</div><div class="stat-value" id="profile-likes-count">--</div></div>
+            
+            <div class="data-dump-title">// BADGES</div>
+            <div id="user-badges" class="achievement-grid" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+          </aside>
 
-          <div class="profile-grid">
-            <section class="panel profile-card">
-              <h3><i class="fas fa-map-marked-alt"></i> // Highlights</h3>
-              <div class="highlight-grid">${highlights}</div>
+          <main style="display:flex;flex-direction:column;gap:16px;">
+            <section class="panel">
+              <div class="panel-header">Dossier</div>
+              <div class="panel-body">${bioHtml}</div>
             </section>
-            <section class="panel profile-card">
-              <h3><i class="fas fa-stream"></i> // Activity Log</h3>
-              <div class="timeline">${timeline}</div>
+
+            <section class="panel">
+              <div class="panel-header">Activity Log</div>
+              <div class="terminal-log">${timeline || 'No activity recorded.'}</div>
             </section>
-          </div>
 
-          <div class="profile-grid">
-            <section class="panel profile-card"><h3><i class="fas fa-link"></i> // Links</h3><div class="flex flex-col gap-8">${linksHtml}</div></section>
-            <section class="panel profile-card"><h3><i class="fas fa-images"></i> // Gallery</h3>${galleryHtml}</section>
-          </div>
-
-          <section class="panel profile-card">
-            <h3><i class="fas fa-bullhorn"></i> // Posts</h3>
-            ${isOwn ? `<div class="form-group"><textarea class="form-control" id="profile-post-input" rows="3" placeholder="Share an update or drop intel..."></textarea><button class="btn btn-primary w-full" style="margin-top:8px;" onclick="app.submitProfilePost('${targetId}')"><i class="fas fa-paper-plane"></i> Post</button></div>` : ''}
-            <div id="profile-posts-list" class="loading">Loading posts...</div>
-          </section>
-
-          <section class="panel profile-card">
-            <h3><i class="fas fa-comments"></i> // Comments</h3>
-            ${this.currentUser ? `<div class="form-group"><textarea class="form-control" id="profile-comment-input" rows="3" placeholder="Leave a note..."></textarea><button class="btn btn-primary w-full" style="margin-top:8px;" onclick="app.submitProfileComment('${targetId}')"><i class="fas fa-comment"></i> Comment</button></div>` : '<div class="empty-state">Sign in to comment.</div>'}
-            <div id="profile-comments-list" class="loading">Loading comments...</div>
-          </section>
+            <section class="panel">
+              <div class="panel-header">Posts</div>
+              <div class="panel-body">
+                ${isOwn ? `<div class="form-group"><textarea class="textarea" id="profile-post-input" placeholder="Drop intel..."></textarea><button class="btn btn-primary" onclick="app.submitProfilePost('${targetId}')">Post</button></div>` : ''}
+                <div id="profile-posts-list">Loading posts...</div>
+              </div>
+            </section>
+          </main>
         </div>`;
 
       this.loadUserSocialStats(targetId, locs);
