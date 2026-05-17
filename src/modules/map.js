@@ -296,4 +296,9 @@ export const mapMethods = {
       }
     });
   },
+
+  clearMarkers() {
+    if (this.markerClusterGroup) this.markerClusterGroup.clearLayers();
+    this.markers.clear();
+  },
 };

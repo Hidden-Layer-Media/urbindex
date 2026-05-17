@@ -170,7 +170,7 @@ export const forumMethods = {
         html += `
           <div class="forum-thread-row" data-tid="${doc.id}" data-ttitle="${this.escapeHtml(d.title || 'Untitled')}" tabindex="0" role="button">
             <div class="forum-thread-subject">
-              <i class="fas fa-comment-alt forum-thread-icon"></i>
+              ${d.isPinned ? '<i class="fas fa-thumbtack forum-thread-icon" title="Pinned"></i>' : '<i class="fas fa-comment-alt forum-thread-icon"></i>'}
               <span class="forum-thread-title">${this.escapeHtml(d.title || 'Untitled')}</span>
             </div>
             <span class="forum-thread-author">${this.escapeHtml(d.authorName || 'unknown')}</span>
@@ -435,6 +435,7 @@ export const forumMethods = {
       const cntEl = document.getElementById('forum-reply-count');
       if (cntEl) cntEl.textContent = '0';
       this.showToast('Reply posted!', 'success');
+      this.announceToScreenReader('Reply posted successfully', 'polite');
       this._loadForumPosts(threadId);
     } catch (e) {
       this.showToast('Failed to post reply', 'error');
