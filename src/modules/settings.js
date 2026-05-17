@@ -81,6 +81,14 @@ export const settingsMethods = {
           <label class="form-label">Map Tile Style</label>
           <select class="select" id="settings-map-style"><option value="default">OpenStreetMap Default</option><option value="dark">Dark Mode Map</option><option value="terrain">Terrain View</option></select>
         </div>
+        <div class="form-group">
+          <label class="form-label">Visual Intensity</label>
+          <select class="select" id="settings-intensity" onchange="app.updateTerminalIntensity(this.value)">
+            <option value="0.2">Low</option>
+            <option value="0.5" selected>Medium</option>
+            <option value="0.8">High</option>
+          </select>
+        </div>
         <div class="form-actions">
           <button class="btn btn-primary" onclick="app.updateDisplaySettings()"><i class="fas fa-save"></i> Save Display Settings</button>
         </div>
@@ -169,10 +177,18 @@ export const settingsMethods = {
   async updateDisplaySettings() {
     if (!this.currentUser) return;
     const mapStyle = document.getElementById('settings-map-style')?.value;
+    const intensity = document.getElementById('settings-intensity')?.value;
     try {
-      await this.db.collection('user_settings').doc(this.currentUser.uid).set({ mapStyle, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      await this.db.collection('user_settings').doc(this.currentUser.uid).set({ mapStyle, intensity, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      this.updateTerminalIntensity(intensity);
       this.showToast('Display settings updated!', 'success');
     } catch { this.showToast('Failed to update display settings', 'error'); }
+  },
+
+  updateTerminalIntensity(val) {
+    const root = document.documentElement;
+    root.style.setProperty('--scanline-opacity', val);
+    root.style.setProperty('--glitch-duration', val == '0.8' ? '0.1s' : '0.3s');
   },
 
   showChangePasswordModal() {

@@ -13,6 +13,8 @@ export const uiMethods = {
       authBtn: e => { e.preventDefault(); this.handleAuth(); },
       pwReset: e => this.handlePasswordReset(e),
       editProfile: e => this.handleEditProfile(e),
+      online: () => this.updateOnlineStatus(true),
+      offline: () => this.updateOnlineStatus(false),
       globalKeydown: e => {
         if (e.key === 'Escape') {
           this.hideModal();
@@ -22,6 +24,12 @@ export const uiMethods = {
           this.hideUserLocationsModal();
           document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
         }
+        // Shortcuts: Ctrl+K: Search, Ctrl+M: Map, Ctrl+P: Profile
+        if (e.ctrlKey || e.metaKey) {
+          if (e.key === 'k') { e.preventDefault(); document.getElementById('search-modal').classList.add('active'); }
+          else if (e.key === 'm') { e.preventDefault(); this.showView('map'); }
+          else if (e.key === 'p') { e.preventDefault(); this.showView('profile'); }
+        }
       }
     };
 
@@ -29,6 +37,10 @@ export const uiMethods = {
     document.getElementById('password-reset-form')?.addEventListener('submit', this._uiListeners.pwReset);
     document.getElementById('edit-profile-form')?.addEventListener('submit', this._uiListeners.editProfile);
     document.addEventListener('keydown', this._uiListeners.globalKeydown);
+    window.addEventListener('online', this._uiListeners.online);
+    window.addEventListener('offline', this._uiListeners.offline);
+
+    this.updateOnlineStatus(navigator.onLine);
 
     this.initGeocoding();
     this.initKeyboardNavigation();
@@ -46,6 +58,15 @@ export const uiMethods = {
     document.getElementById('password-reset-form')?.removeEventListener('submit', this._uiListeners.pwReset);
     document.getElementById('edit-profile-form')?.removeEventListener('submit', this._uiListeners.editProfile);
     document.removeEventListener('keydown', this._uiListeners.globalKeydown);
+    window.removeEventListener('online', this._uiListeners.online);
+    window.removeEventListener('offline', this._uiListeners.offline);
+  },
+
+  updateOnlineStatus(isOnline) {
+    const dot = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+    if (dot) dot.style.background = isOnline ? 'var(--green-term)' : 'var(--red-alert)';
+    if (text) text.textContent = isOnline ? 'Online' : 'Offline';
   },
 
   showView(viewName) {

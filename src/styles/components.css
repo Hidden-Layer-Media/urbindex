@@ -339,7 +339,7 @@ textarea.form-control {
 }
 
 .glitch-error {
-  animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+  animation: glitch var(--glitch-duration) cubic-bezier(.25, .46, .45, .94) both infinite;
 }
 
 @keyframes glitch {
@@ -707,7 +707,7 @@ textarea.form-control {
   background: var(--scanline);
   pointer-events: none;
   z-index: 300;
-  opacity: 0.5;
+  opacity: var(--scanline-opacity);
 }
 
 /* ── Zoom controls ── */

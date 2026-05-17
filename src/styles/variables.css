@@ -51,6 +51,10 @@
   --transition:   0.1s ease;
   --radius:       0px; /* BBS aesthetic — hard corners */
 
+  /* Effect intensity variables */
+  --scanline-opacity: 0.5;
+  --glitch-duration: 0.3s;
+
   /* ── Legacy aliases (used in inline JS template strings) ── */
   --cz-yellow:          var(--yellow);
   --cz-yellow-dark:     var(--yellow-dim);
