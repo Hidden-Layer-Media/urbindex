@@ -426,6 +426,17 @@
   </div>
 </div>
 
+<!-- Global Search Modal -->
+<div id="search-modal" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header"><h3>// GLOBAL SEARCH</h3></div>
+    <div class="modal-body">
+      <input class="form-control" type="text" id="global-search-input" placeholder="Search locations, posts, users..." autofocus>
+      <div id="global-search-results" style="margin-top:16px;"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Firebase + Leaflet -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
