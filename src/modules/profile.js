@@ -226,12 +226,13 @@ export const profileMethods = {
     container.innerHTML = badges.map(b => `
       <div class="achievement-tag">
         <div class="tag-icon"><i class="fas fa-trophy"></i></div>
-        <div class="tag-name">${this.getBadgeName(b.badgeId)}</div>
+        <div class="tag-name">${this.getUserLevelBadge(b.badgeId).split('</i>')[1] || b.badgeId}</div>
         <div class="tag-desc">${this.getBadgeDescription(b.badgeId)}</div>
       </div>`).join('');
   },
 
   getBadgeName(id) {
+    // Legacy mapping (maintained for backward compatibility if needed)
     return { first_location:'First Explorer', mapper_10:'Mapper', mapper_50:'Master Mapper', first_visit:'First Check-in', explorer_10:'Explorer', explorer_50:'Veteran Explorer', commentator:'Commentator', social_butterfly:'Social Butterfly', photographer:'Photographer' }[id] || id;
   },
 

@@ -9,6 +9,8 @@ import { profileMethods } from './modules/profile.js';
 import { dataMethods } from './modules/data.js';
 import { settingsMethods } from './modules/settings.js';
 import { forumMethods } from './modules/forum.js';
+import { gamificationMethods } from './modules/gamification.js';
+import { messageMethods } from './modules/messaging.js';
 
 class UrbindexApp {
   constructor() {
@@ -75,6 +77,8 @@ Object.assign(UrbindexApp.prototype,
   dataMethods,
   settingsMethods,
   forumMethods,
+  gamificationMethods,
+  messageMethods
 );
 
 export { UrbindexApp };

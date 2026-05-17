@@ -136,6 +136,11 @@ export const forumMethods = {
         .limit(50)
         .get();
 
+      const threads = [];
+      snap.forEach(d => threads.push({ id: d.id, ...d.data() }));
+      // Fallback sort just in case of missing timestamp
+      threads.sort((a, b) => (b.lastPostAt?.seconds || 0) - (a.lastPostAt?.seconds || 0));
+
       if (snap.empty) {
         container.innerHTML = `
           <div class="forum-empty">
