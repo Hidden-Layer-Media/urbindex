@@ -256,10 +256,12 @@ export const forumMethods = {
       await this.db.runTransaction(async (transaction) => {
         const threadRef = this.db.collection('forum_threads').doc();
         newThreadId = threadRef.id;
-        
+
         transaction.set(threadRef, {
           boardId,
           title:               this.sanitizeInput(title),
+          tags:                title.match(/#\w+/g) || [], // Basic tag extraction
+          isPinned:            false,
           authorId:            this.currentUser.uid,
           authorName:          this.sanitizeInput(authorName),
           createdAt:           now,
@@ -267,6 +269,7 @@ export const forumMethods = {
           lastPostAt:          now,
           lastPostAuthorName:  this.sanitizeInput(authorName),
         });
+      // ... rest of transaction
 
         const postRef = this.db.collection('forum_posts').doc();
         transaction.set(postRef, {
