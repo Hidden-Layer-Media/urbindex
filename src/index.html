@@ -189,7 +189,7 @@
 
 <!-- Add/Edit Location Modal -->
 <div id="location-modal-overlay" class="modal-overlay" onclick="if(event.target===this)app.hideModal()">
-  <div class="modal" onclick="event.stopPropagation()">
+  <div class="modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
     <button class="modal-close" onclick="app.hideModal()" aria-label="Close">&times;</button>
     <div class="modal-header"><h3>Add Location</h3></div>
     <form id="location-form">
@@ -359,7 +359,7 @@
 
 <!-- Password Reset Modal -->
 <div id="password-reset-modal" class="modal-overlay" onclick="if(event.target===this)app.hidePasswordResetModal()">
-  <div class="modal" onclick="event.stopPropagation()">
+  <div class="modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
     <button class="modal-close" onclick="app.hidePasswordResetModal()" aria-label="Close">&times;</button>
     <div class="modal-header"><h3>// Password Reset</h3></div>
     <form id="password-reset-form">
@@ -377,7 +377,7 @@
 
 <!-- Edit Profile Modal -->
 <div id="edit-profile-modal" class="modal-overlay" onclick="if(event.target===this)app.hideEditProfileModal()">
-  <div class="modal" onclick="event.stopPropagation()">
+  <div class="modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
     <button class="modal-close" onclick="app.hideEditProfileModal()" aria-label="Close">&times;</button>
     <div class="modal-header"><h3>// Edit Profile</h3></div>
     <form id="edit-profile-form">
@@ -411,7 +411,7 @@
 
 <!-- User Locations Modal -->
 <div id="user-locations-modal" class="modal-overlay" onclick="if(event.target===this)app.hideUserLocationsModal()">
-  <div class="modal" onclick="event.stopPropagation()">
+  <div class="modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
     <button class="modal-close" onclick="app.hideUserLocationsModal()" aria-label="Close">&times;</button>
     <div class="modal-header"><h3 id="user-locations-title">// User Locations</h3></div>
     <div id="user-locations-list" class="loading">Loading...</div>
@@ -420,7 +420,7 @@
 
 <!-- Location Detail Modal -->
 <div id="location-detail-modal" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('active')">
-  <div class="modal" onclick="event.stopPropagation()">
+  <div class="modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
     <button class="modal-close" onclick="document.getElementById('location-detail-modal').classList.remove('active')" aria-label="Close">&times;</button>
     <div id="location-detail-content"></div>
   </div>
@@ -428,7 +428,7 @@
 
 <!-- Global Search Modal -->
 <div id="search-modal" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('active')">
-  <div class="modal" onclick="event.stopPropagation()">
+  <div class="modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
     <div class="modal-header"><h3>// GLOBAL SEARCH</h3></div>
     <div class="modal-body">
       <input class="form-control" type="text" id="global-search-input" placeholder="Search locations, posts, users..." autofocus>
