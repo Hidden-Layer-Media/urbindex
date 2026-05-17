@@ -113,10 +113,18 @@ select.form-control {
   padding-right: 28px;
 }
 
-textarea.form-control {
+.textarea {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--black);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  width: 100%;
   resize: vertical;
   min-height: 80px;
 }
+
 
 .form-hint {
   font-size: 10px;
@@ -317,7 +325,7 @@ textarea.form-control {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 2px solid white;
+  border: 2px solid var(--border);
   box-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
@@ -326,7 +334,7 @@ textarea.form-control {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid white;
+  border: 2px solid var(--border);
   box-shadow: 0 0 8px rgba(0,255,65,0.6);
 }
 
@@ -634,7 +642,7 @@ textarea.form-control {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid white;
+  border: 2px solid var(--border);
   box-shadow: var(--glow-green);
   animation: pulse 2s ease-in-out infinite;
 }

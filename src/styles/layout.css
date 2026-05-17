@@ -137,7 +137,7 @@
 
 .nav-badge {
   background: var(--red-alert);
-  color: white;
+  color: var(--black);
   font-size: 9px;
   font-weight: 700;
   width: 16px;

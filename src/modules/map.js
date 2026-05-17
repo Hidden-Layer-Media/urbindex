@@ -133,7 +133,7 @@ export const mapMethods = {
       const m = L.marker([lat, lng], {
         icon: L.divIcon({
           className: 'user-location-marker',
-          html: '<div style="background:var(--green-term);width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 8px rgba(0,255,65,0.6);"></div>',
+          html: '<div style="background:var(--green-term);width:14px;height:14px;border-radius:50%;border:2px solid var(--border);box-shadow:0 0 8px rgba(0,255,65,0.6);"></div>',
           iconSize: [14, 14], iconAnchor: [7, 7],
         }),
       }).addTo(this.map);

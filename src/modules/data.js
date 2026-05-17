@@ -405,8 +405,8 @@ export const dataMethods = {
       <div style="position:relative;max-width:95vw;max-height:95vh;">
         <img src="${this.escapeHtml(photos[idx])}" alt="Photo" style="max-width:100%;max-height:100%;object-fit:contain;border:3px solid var(--yellow);">
         <button class="modal-close" onclick="this.closest('.modal').remove()" style="top:8px;right:8px;">&times;</button>
-        ${photos.length > 1 ? `<button onclick="window.currentPhotoIndex=(${idx}-1+${photos.length})%${photos.length};app.showFullScreenPhoto()" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.7);color:#fff;border:none;padding:8px 12px;cursor:pointer;"><i class="fas fa-chevron-left"></i></button>
-        <button onclick="window.currentPhotoIndex=(${idx}+1)%${photos.length};app.showFullScreenPhoto()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.7);color:#fff;border:none;padding:8px 12px;cursor:pointer;"><i class="fas fa-chevron-right"></i></button>` : ''}
+        ${photos.length > 1 ? `<button onclick="window.currentPhotoIndex=(${idx}-1+${photos.length})%${photos.length};app.showFullScreenPhoto()" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.7);color:var(--text);border:none;padding:8px 12px;cursor:pointer;"><i class="fas fa-chevron-left"></i></button>
+        <button onclick="window.currentPhotoIndex=(${idx}+1)%${photos.length};app.showFullScreenPhoto()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.7);color:var(--text);border:none;padding:8px 12px;cursor:pointer;"><i class="fas fa-chevron-right"></i></button>` : ''}
       </div>`;
     document.querySelector('.location-detail-modal')?.remove();
     document.body.appendChild(modal);
