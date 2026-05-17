@@ -73,73 +73,66 @@ export const profileMethods = {
 
       content.innerHTML = `
         <div class="profile-shell">
-          <section class="panel profile-hero">
-            <div class="profile-avatar">${avatar ? `<img src="${this.escapeHtml(avatar)}" alt="${this.escapeHtml(name)}" style="width:100%;height:100%;object-fit:cover;">` : `<span>${this.escapeHtml(name.charAt(0).toUpperCase())}</span>`}</div>
-            <div class="profile-meta">
-              <div class="chip live"><i class="fas fa-id-card"></i> Explorer Dossier</div>
-              <h2>${this.escapeHtml(name)}</h2>
-              ${bioHtml}
-              <div class="meta-chips" style="margin-top:10px;">
-                <span class="chip"><i class="fas fa-calendar-alt"></i> Joined ${joined}</span>
-                <span class="chip"><i class="fas fa-map-pin"></i> ${total} locations</span>
-              </div>
+          <header class="profile-header">
+            <div class="profile-avatar-lg">${avatar ? `<img src="${this.escapeHtml(avatar)}" alt="${this.escapeHtml(name)}">` : `<span>${this.escapeHtml(name.charAt(0).toUpperCase())}</span>`}</div>
+            <div>
+              <h2 class="profile-name">${this.escapeHtml(name)}</h2>
+              <div class="profile-handle">// @${this.escapeHtml(name.toLowerCase().replace(/\s/g, '_'))}</div>
             </div>
-            <div class="profile-actions">
+            <div class="profile-actions" style="margin-left:auto;">
               ${isOwn ? `
-                <button class="btn btn-primary" onclick="app.showEditProfile()"><i class="fas fa-edit"></i> Edit Profile</button>
-                <button class="btn" onclick="app.showAddLocationModal()"><i class="fas fa-plus"></i> Add Location</button>
-                <button class="btn" onclick="app.viewUserLocations('${targetId}')"><i class="fas fa-map-marked-alt"></i> Locations</button>
+                <button class="btn btn-primary" onclick="app.showEditProfile()"><i class="fas fa-edit"></i> Edit</button>
+                <button class="btn" onclick="app.showAddLocationModal()"><i class="fas fa-plus"></i> Add</button>
               ` : `
                 <button class="btn btn-primary" id="follow-btn-${targetId}" onclick="app.toggleFollow('${targetId}')"><i class="fas fa-user-plus"></i> Follow</button>
                 <button class="btn" onclick="app.messageUser('${targetId}')"><i class="fas fa-envelope"></i> Message</button>
-                <button class="btn" onclick="app.viewUserLocations('${targetId}')"><i class="fas fa-map-marked-alt"></i> Locations</button>
               `}
+            </div>
+          </header>
+
+          <section class="panel">
+            <h3>// Dossier</h3>
+            ${bioHtml}
+            <div class="meta-chips" style="margin-top:10px;">
+              <span class="chip"><i class="fas fa-calendar-alt"></i> Joined ${joined}</span>
             </div>
           </section>
 
-          <section class="panel profile-stats">
-            <div class="stat-grid">
-              <div class="stat-card highlight"><div class="stat-label">Locations</div><div class="stat-value">${total}</div></div>
-              <div class="stat-card"><div class="stat-label">Followers</div><div class="stat-value" id="profile-followers-count">--</div></div>
-              <div class="stat-card"><div class="stat-label">Following</div><div class="stat-value" id="profile-following-count">--</div></div>
-              <div class="stat-card"><div class="stat-label">Likes</div><div class="stat-value" id="profile-likes-count">--</div></div>
-              <div class="stat-card"><div class="stat-label">Visits</div><div class="stat-value" id="profile-visits-count">--</div></div>
-              <div class="stat-card"><div class="stat-label">Badges</div><div class="stat-value" id="profile-badges-count">--</div></div>
-            </div>
+          <section class="profile-stats">
+            <div class="profile-stat"><div class="stat-label">Locations</div><div class="stat-value">${total}</div></div>
+            <div class="profile-stat"><div class="stat-label">Followers</div><div class="stat-value" id="profile-followers-count">--</div></div>
+            <div class="profile-stat"><div class="stat-label">Following</div><div class="stat-value" id="profile-following-count">--</div></div>
+            <div class="profile-stat"><div class="stat-label">Likes</div><div class="stat-value" id="profile-likes-count">--</div></div>
+            <div class="profile-stat"><div class="stat-label">Visits</div><div class="stat-value" id="profile-visits-count">--</div></div>
+            <div class="profile-stat"><div class="stat-label">Badges</div><div class="stat-value" id="profile-badges-count">--</div></div>
           </section>
 
           <div class="profile-grid">
             <section class="panel profile-card">
-              <h3><i class="fas fa-map-marked-alt"></i> Location Highlights</h3>
+              <h3><i class="fas fa-map-marked-alt"></i> // Highlights</h3>
               <div class="highlight-grid">${highlights}</div>
-              ${total > 4 ? `<button class="btn" style="margin-top:10px;" onclick="app.showView('locations')">View all ${total}</button>` : ''}
             </section>
             <section class="panel profile-card">
-              <h3><i class="fas fa-stream"></i> Activity Log</h3>
-              <ul class="timeline">${timeline}</ul>
+              <h3><i class="fas fa-stream"></i> // Activity Log</h3>
+              <div class="timeline">${timeline}</div>
             </section>
           </div>
 
           <div class="profile-grid">
-            <section class="panel profile-card"><h3><i class="fas fa-link"></i> Links</h3><div style="display:flex;flex-direction:column;gap:8px;">${linksHtml}</div></section>
-            <section class="panel profile-card"><h3><i class="fas fa-images"></i> Gallery</h3>${galleryHtml}</section>
+            <section class="panel profile-card"><h3><i class="fas fa-link"></i> // Links</h3><div class="flex flex-col gap-8">${linksHtml}</div></section>
+            <section class="panel profile-card"><h3><i class="fas fa-images"></i> // Gallery</h3>${galleryHtml}</section>
           </div>
 
           <section class="panel profile-card">
-            <h3><i class="fas fa-bullhorn"></i> Posts</h3>
-            ${isOwn ? `<div style="margin-bottom:12px;"><textarea class="textarea" id="profile-post-input" rows="3" placeholder="Share an update or drop intel..."></textarea><button class="btn btn-primary" style="margin-top:8px;" onclick="app.submitProfilePost('${targetId}')"><i class="fas fa-paper-plane"></i> Post</button></div>` : ''}
+            <h3><i class="fas fa-bullhorn"></i> // Posts</h3>
+            ${isOwn ? `<div class="form-group"><textarea class="form-control" id="profile-post-input" rows="3" placeholder="Share an update or drop intel..."></textarea><button class="btn btn-primary w-full" style="margin-top:8px;" onclick="app.submitProfilePost('${targetId}')"><i class="fas fa-paper-plane"></i> Post</button></div>` : ''}
             <div id="profile-posts-list" class="loading">Loading posts...</div>
           </section>
 
           <section class="panel profile-card">
-            <h3><i class="fas fa-comments"></i> Comments</h3>
-            ${this.currentUser ? `<div style="margin-bottom:12px;"><textarea class="textarea" id="profile-comment-input" rows="3" placeholder="Leave a note..."></textarea><button class="btn btn-primary" style="margin-top:8px;" onclick="app.submitProfileComment('${targetId}')"><i class="fas fa-comment"></i> Comment</button></div>` : '<div style="color:var(--text-muted);">Sign in to comment.</div>'}
+            <h3><i class="fas fa-comments"></i> // Comments</h3>
+            ${this.currentUser ? `<div class="form-group"><textarea class="form-control" id="profile-comment-input" rows="3" placeholder="Leave a note..."></textarea><button class="btn btn-primary w-full" style="margin-top:8px;" onclick="app.submitProfileComment('${targetId}')"><i class="fas fa-comment"></i> Comment</button></div>` : '<div class="empty-state">Sign in to comment.</div>'}
             <div id="profile-comments-list" class="loading">Loading comments...</div>
-          </section>
-
-          <section class="panel profile-card">
-            <h3><i class="fas fa-award"></i> Badges &amp; Cred</h3>
-            <div id="user-badges" class="achievement-grid"></div>
           </section>
         </div>`;
 
