@@ -260,7 +260,7 @@ export const forumMethods = {
         transaction.set(threadRef, {
           boardId,
           title:               this.sanitizeInput(title),
-          tags:                title.match(/#\w+/g) || [], // Basic tag extraction
+          tags:                [...new Set((title.match(/#\w+/g) || []).map(t => t.toLowerCase()))], // Case-insensitive, unique tags
           isPinned:            false,
           authorId:            this.currentUser.uid,
           authorName:          this.sanitizeInput(authorName),
