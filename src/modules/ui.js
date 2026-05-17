@@ -22,6 +22,7 @@ export const uiMethods = {
           this.hideAuthModal();
           this.hideEditProfileModal();
           this.hideUserLocationsModal();
+          document.getElementById('search-modal')?.classList.remove('active');
           document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
         }
         // Shortcuts: Ctrl+K: Search, Ctrl+M: Map, Ctrl+P: Profile

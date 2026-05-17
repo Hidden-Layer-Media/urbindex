@@ -119,11 +119,16 @@ export const settingsMethods = {
   },
 
   async loadUserSettings() {
+    // Load intensity
+    const intensity = localStorage.getItem('terminal-intensity');
+    if (intensity) this.updateTerminalIntensity(intensity);
+
     if (!this.currentUser) return;
     try {
       const doc = await this.db.collection('user_settings').doc(this.currentUser.uid).get();
       if (!doc.exists) return;
-      const s = doc.data();
+      // ... existing load ...
+
       const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
       set('settings-email-notifications', s.emailNotifications);
       set('settings-push-notifications', s.pushNotifications);
