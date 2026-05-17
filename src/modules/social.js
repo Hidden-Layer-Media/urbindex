@@ -125,6 +125,14 @@ export const socialMethods = {
     if (search) { search.value = `#${tag}`; this.filterSocialFeed(); }
   },
 
+  clearSocialFilters() {
+    const search = document.getElementById('social-search');
+    const filterType = document.getElementById('social-filter-type');
+    if (search) search.value = '';
+    if (filterType) filterType.value = 'all';
+    this.filterSocialFeed();
+  },
+
   applySocialFilters(items = []) {
     const type = document.getElementById('social-filter-type')?.value || 'all';
     const sort = document.getElementById('social-sort-by')?.value || 'recent';
@@ -151,7 +159,11 @@ export const socialMethods = {
     const container = document.getElementById('social-feed-container');
     if (!container) return;
     if (!activities?.length) {
-      container.innerHTML = '<div class="empty-state">No posts match the current filter.</div>';
+      container.innerHTML = `
+        <div class="empty-state">
+          <p>No posts match the current filter.</p>
+          <button class="btn btn-sm" onclick="app.clearSocialFilters()">Clear Filters</button>
+        </div>`;
       return;
     }
     container.innerHTML = '';
