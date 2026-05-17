@@ -308,8 +308,26 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.fromUserId == request.auth.uid;
     }
 
-    // Location images/photos - allow public read, authenticated write
-    match /location_images/{imageId} {
+    // Crew/Groups
+    match /crews/{crewId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
+    // User XP & Level (read-only for public, restricted write)
+    match /user_xp/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Verified Status (admin managed)
+    match /verified_status/{userId} {
+      allow read: if true;
+      allow write: if false; 
+    }
+
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.uploadedBy == request.auth.uid;
       allow update, delete: if request.auth != null && resource.data.uploadedBy == request.auth.uid;
