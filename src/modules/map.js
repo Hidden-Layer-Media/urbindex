@@ -186,9 +186,9 @@ export const mapMethods = {
   async geocodeAddress(address) {
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
     const res = await fetch(url, { headers: { 'User-Agent': 'Urbindex/2.0' } });
-    if (!res.ok) throw new Error(res.status === 429 ? 'rate limit' : 'Geocoding unavailable');
+    if (!res.ok) throw new Error(res.status === 429 ? 'Geocoding rate limit exceeded. Please try again later.' : 'Geocoding service unavailable. Please check your connection.');
     const data = await res.json();
-    if (!data.length) throw new Error('not found');
+    if (!data.length) throw new Error('Address not found. Please check spelling.');
     return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), displayName: data[0].display_name };
   },
 

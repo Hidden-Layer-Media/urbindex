@@ -101,4 +101,16 @@ export const utilsMethods = {
       await new Promise(resolve => setTimeout(resolve, speed));
     }
   },
+
+  setButtonLoading(btn, isLoading, loadingText = 'Loading...') {
+    if (!btn) return;
+    if (isLoading) {
+      btn.dataset.orig = btn.innerHTML;
+      btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
+      btn.disabled = true;
+    } else {
+      btn.innerHTML = btn.dataset.orig || btn.innerHTML;
+      btn.disabled = false;
+    }
+  },
 };

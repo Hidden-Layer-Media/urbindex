@@ -103,8 +103,7 @@ export const authMethods = {
     }
 
     const btn = e.target.querySelector('button[type="submit"]');
-    const orig = btn.textContent;
-    btn.textContent = 'Signing In...'; btn.disabled = true;
+    this.setButtonLoading(btn, true, 'Signing In...');
     try {
       await this.auth.signInWithEmailAndPassword(email, passwordEl.value.trim());
       this.hideAuthModal();
@@ -121,7 +120,7 @@ export const authMethods = {
         'auth/invalid-credential': 'Invalid email or password',
       };
       this.showToast(msgs[err.code] || err.message, 'error');
-    } finally { btn.textContent = orig; btn.disabled = false; }
+    } finally { this.setButtonLoading(btn, false); }
   },
 
   async handleSignUp(e) {
@@ -139,8 +138,7 @@ export const authMethods = {
     }
 
     const btn = e.target.querySelector('button[type="submit"]');
-    const orig = btn.textContent;
-    btn.textContent = 'Creating Account...'; btn.disabled = true;
+    this.setButtonLoading(btn, true, 'Creating Account...');
     try {
       const result = await this.auth.createUserWithEmailAndPassword(email, pwEl.value.trim());
       await this.createUserProfile(result.user, 'email');
@@ -158,7 +156,7 @@ export const authMethods = {
         'auth/too-many-requests': 'Too many requests. Please try again later.',
       };
       this.showToast(msgs[err.code] || err.message, 'error');
-    } finally { btn.textContent = orig; btn.disabled = false; }
+    } finally { this.setButtonLoading(btn, false); }
   },
 
   async signInAnonymously() {
