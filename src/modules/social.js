@@ -186,14 +186,14 @@ export const socialMethods = {
         <div class="social-card-content">${this.escapeHtml(item.body || '')}</div>
         ${tags ? `<div style="margin-bottom:12px; display:flex; flex-wrap:wrap; gap:4px;">${tags}</div>` : ''}
         <div class="social-card-footer">
-          <button class="social-action" id="like-btn-${item.id}" onclick="app.togglePostLike('${item.id}')">
+          <button class="social-action" id="like-btn-${item.id}" onclick="app.togglePostLike('${item.id}')" aria-label="Like post">
             <i class="fas fa-heart"></i> <span id="like-count-${item.id}">${item.likesCount || 0}</span>
           </button>
-          <button class="social-action" onclick="app.togglePostComments('${item.id}')">
+          <button class="social-action" onclick="app.togglePostComments('${item.id}')" aria-label="Toggle comments">
             <i class="fas fa-comment"></i> Comments
           </button>
           ${item.locationId ? `
-            <button class="social-action" onclick="app.viewPostLocation('${item.id}','${item.locationId}')">
+            <button class="social-action" onclick="app.viewPostLocation('${item.id}','${item.locationId}')" aria-label="View location">
               <i class="fas fa-map-marker-alt"></i> Location
             </button>` : ''}
         </div>

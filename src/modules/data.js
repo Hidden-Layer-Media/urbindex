@@ -1,8 +1,10 @@
 export const dataMethods = {
   async loadData() {
-    this.loadLocations();
-    this.loadStats();
-    this.loadActivity();
+    await Promise.all([
+      this.loadLocations(),
+      this.loadStats(),
+      this.loadActivity()
+    ]);
   },
 
   loadLocations() {

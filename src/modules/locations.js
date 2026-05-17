@@ -372,19 +372,22 @@ export const locationsMethods = {
       if (!modal || !content) return;
       const riskColor = this.getRiskColor(data.riskLevel);
       content.innerHTML = `
-        <div class="modal-header"><h3>${this.escapeHtml(data.name || 'Location')}</h3></div>
-        <div style="padding:16px;">
-          <div style="margin-bottom:8px;"><span style="background:${riskColor};color:#000;padding:2px 8px;font-size:0.8rem;">${data.riskLevel || 'unknown'}</span> <span style="color:var(--text-muted);font-size:0.85rem;">${this.escapeHtml(data.category || '')}</span></div>
+        <div class="location-modal-header">
+          <h3>${this.escapeHtml(data.name || 'Location')}</h3>
+          <button class="modal-close" onclick="document.getElementById('location-detail-modal').classList.remove('active')" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div style="margin-bottom:8px;"><span class="badge" style="background:${riskColor};color:#000;padding:2px 8px;font-size:0.8rem;">${data.riskLevel || 'unknown'}</span> <span class="text-muted">${this.escapeHtml(data.category || '')}</span></div>
           <p style="margin-bottom:12px;">${this.escapeHtml(data.description || '')}</p>
           ${data.tags?.length ? `<div style="margin-bottom:12px;">${data.tags.map(t => `<span class="tag">${this.escapeHtml(t)}</span>`).join(' ')}</div>` : ''}
-          ${this.currentUser ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
-            <button class="btn btn-primary" onclick="app.checkInLocation('${locationId}')"><i class="fas fa-map-marker-alt"></i> Check In</button>
-            <button class="btn" onclick="app.likeLocation('${locationId}')"><i class="fas fa-heart"></i> Like</button>
-          </div>` : '<p style="color:var(--text-muted);">Sign in for more actions.</p>'}
+          ${this.currentUser ? `<div class="flex gap-8" style="margin-top:12px;">
+            <button class="btn btn-primary" onclick="app.checkInLocation('${locationId}')" aria-label="Check In"><i class="fas fa-map-marker-alt"></i> Check In</button>
+            <button class="btn" onclick="app.likeLocation('${locationId}')" aria-label="Like"><i class="fas fa-heart"></i> Like</button>
+          </div>` : '<p class="text-muted">Sign in for more actions.</p>'}
           <div id="comments-${locationId}" style="margin-top:16px;"></div>
-          ${this.currentUser ? `<div style="margin-top:8px;display:flex;gap:8px;">
-            <input class="input" id="comment-input-${locationId}" placeholder="Add a comment..." style="flex:1;">
-            <button class="btn btn-primary" onclick="app.addComment('${locationId}',document.getElementById('comment-input-${locationId}').value)">Post</button>
+          ${this.currentUser ? `<div class="flex gap-8" style="margin-top:8px;">
+            <input class="form-control" id="comment-input-${locationId}" placeholder="Add a comment..." aria-label="Comment">
+            <button class="btn btn-primary" onclick="app.addComment('${locationId}',document.getElementById('comment-input-${locationId}').value)"><i class="fas fa-paper-plane"></i></button>
           </div>` : ''}
         </div>`;
       modal.classList.add('active');
