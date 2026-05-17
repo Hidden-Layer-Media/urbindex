@@ -1,7 +1,20 @@
 export const searchMethods = {
   initGlobalSearch() {
+    const modal = document.getElementById('search-modal');
     const input = document.getElementById('global-search-input');
+    
     input?.addEventListener('input', () => this.performGlobalSearch(input.value));
+    
+    // Simple focus trap
+    modal?.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        const focusable = modal.querySelectorAll('input, button');
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
+        else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
+      }
+    });
   },
 
   async performGlobalSearch(query) {

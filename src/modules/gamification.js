@@ -5,13 +5,17 @@ export const gamificationMethods = {
     if (xpGain === 0) return;
 
     const ref = this.db.collection('user_xp').doc(userId);
-    await this.db.runTransaction(async (transaction) => {
-      const doc = await transaction.get(ref);
-      const currentXP = doc.exists ? (doc.data().xp || 0) : 0;
-      const newXP = currentXP + xpGain;
-      const newLevel = Math.floor(newXP / 100) + 1;
-      transaction.set(ref, { xp: newXP, level: newLevel, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-    });
+    try {
+      await this.db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(ref);
+        const currentXP = doc.exists ? (doc.data().xp || 0) : 0;
+        const newXP = currentXP + xpGain;
+        const newLevel = Math.floor(newXP / 100) + 1;
+        transaction.set(ref, { xp: newXP, level: newLevel, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      });
+    } catch (e) {
+      console.error('Failed to update XP:', e);
+    }
   },
 
   getUserLevelBadge(level) {

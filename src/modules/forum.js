@@ -138,8 +138,8 @@ export const forumMethods = {
 
       const threads = [];
       snap.forEach(d => threads.push({ id: d.id, ...d.data() }));
-      // Fallback sort just in case of missing timestamp
-      threads.sort((a, b) => (b.lastPostAt?.seconds || 0) - (a.lastPostAt?.seconds || 0));
+      // Pinned threads first, then by lastPostAt
+      threads.sort((a, b) => (b.isPinned - a.isPinned) || (b.lastPostAt?.seconds || 0) - (a.lastPostAt?.seconds || 0));
 
       if (snap.empty) {
         container.innerHTML = `

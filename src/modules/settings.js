@@ -178,6 +178,7 @@ export const settingsMethods = {
     if (!this.currentUser) return;
     const mapStyle = document.getElementById('settings-map-style')?.value;
     const intensity = document.getElementById('settings-intensity')?.value;
+    localStorage.setItem('terminal-intensity', intensity);
     try {
       await this.db.collection('user_settings').doc(this.currentUser.uid).set({ mapStyle, intensity, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       this.updateTerminalIntensity(intensity);

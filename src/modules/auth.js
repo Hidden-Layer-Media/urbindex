@@ -12,7 +12,9 @@ export const authMethods = {
         if (!user.isAnonymous) this.initSessionManagement();
       } else {
         this.stopSessionManagement();
-        app.cleanupMessaging();
+        if (window.app && typeof window.app.cleanupMessaging === 'function') {
+          window.app.cleanupMessaging();
+        }
       }
     }, error => {
       if (error.code === 'auth/network-request-failed') {
