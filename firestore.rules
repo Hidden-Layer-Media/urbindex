@@ -325,9 +325,11 @@ service cloud.firestore {
     // Verified Status (admin managed)
     match /verified_status/{userId} {
       allow read: if true;
-      allow write: if false; 
+      allow write: if false;
     }
 
+    // Uploads / media
+    match /uploads/{uploadId} {
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.uploadedBy == request.auth.uid;
       allow update, delete: if request.auth != null && resource.data.uploadedBy == request.auth.uid;
