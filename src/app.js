@@ -50,16 +50,18 @@ class UrbindexApp {
       this.initGlobalSearch();
       await this.initFirebase();
       this.initAuth();
+
+      // hide loading screen after 1.5s — independent of geolocation/map timing
+      setTimeout(() => {
+        const ls = document.getElementById('loading-screen');
+        if (ls) { ls.classList.add('loading-fade'); setTimeout(() => ls.classList.add('hidden'), 500); }
+      }, 1500);
+
       await mapReady;
       this.loadData();
 
       const logoTag = document.querySelector('.logo-tag');
       if (logoTag) this.typeWriter(logoTag, '// urban exploration network', 40);
-
-      setTimeout(() => {
-        const ls = document.getElementById('loading-screen');
-        if (ls) { ls.classList.add('loading-fade'); setTimeout(() => ls.classList.add('hidden'), 500); }
-      }, 1500);
     } catch (err) {
       this.showError(`Failed to initialize app: ${err.message}`);
       const ls = document.getElementById('loading-screen');
