@@ -57,6 +57,10 @@
     <button class="nav-btn" type="button" data-view="forum"><i class="fas fa-comments"></i> Forum</button>
     <button class="nav-btn" type="button" data-view="profile"><i class="fas fa-user"></i> Profile</button>
     <button class="nav-btn" type="button" data-view="groups"><i class="fas fa-layer-group"></i> Groups</button>
+    <button class="nav-btn" type="button" data-view="messages">
+      <i class="fas fa-envelope"></i> Messages
+      <span class="nav-badge hidden" id="messages-badge"></span>
+    </button>
     <button class="nav-btn" type="button" data-view="notifications">
       <i class="fas fa-bell"></i> Alerts
       <span class="nav-badge hidden" id="notification-badge"></span>
@@ -172,6 +176,11 @@
       <div id="groups-view-content"></div>
     </div>
 
+    <!-- MESSAGES VIEW -->
+    <div class="view" id="messages-view">
+      <div id="messages-view-content"></div>
+    </div>
+
     <!-- NOTIFICATIONS VIEW -->
     <div class="view" id="notifications-view">
       <div id="notifications-view-content"></div>
@@ -256,6 +265,13 @@
         </div>
         <div id="selected-tags" class="tag-chips mb-6"></div>
         <div id="predefined-tags-list" class="tag-chips"></div>
+      </div>
+      <div class="modal-section-label">Photos</div>
+      <div class="form-group">
+        <label class="form-label" for="location-photos">Image URLs (one per line, max 10)</label>
+        <textarea class="textarea" id="location-photos" rows="3" placeholder="https://..."></textarea>
+        <div class="form-hint">Paste direct image URLs — jpg, png, webp</div>
+        <div id="location-photos-preview" class="photo-url-preview"></div>
       </div>
       <div class="flex gap-8 mt-12">
         <button type="button" class="btn" onclick="app.hideModal()">Cancel</button>

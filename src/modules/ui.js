@@ -51,6 +51,26 @@ export const uiMethods = {
     const fab = document.getElementById('add-location-fab');
     if (fab) fab.addEventListener('click', () => this.showAddLocationModal());
     document.getElementById('recenter-btn')?.addEventListener('click', () => this.recenterToUserLocation());
+
+    const photosInput = document.getElementById('location-photos');
+    if (photosInput) {
+      let t;
+      photosInput.addEventListener('input', () => {
+        clearTimeout(t);
+        t = setTimeout(() => this._renderPhotosPreview(photosInput.value), 400);
+      });
+    }
+  },
+
+  _renderPhotosPreview(raw) {
+    const preview = document.getElementById('location-photos-preview');
+    if (!preview) return;
+    const urls = raw.split(/\n+/).map(u => u.trim()).filter(u => /^https?:\/\/.+/i.test(u)).slice(0, 10);
+    if (!urls.length) { preview.innerHTML = ''; return; }
+    preview.innerHTML = urls.map(u => {
+      const safe = this.escapeHtml(u);
+      return `<img src="${safe}" alt="preview" onerror="this.outerHTML='<div class=\\'photo-preview-err\\'>bad url</div>'">`;
+    }).join('');
   },
 
   _cleanupUIListeners() {
@@ -81,6 +101,7 @@ export const uiMethods = {
     else if (viewName === 'social') this.showSocialFeed();
     else if (viewName === 'forum') this.showForum();
     else if (viewName === 'groups') this.showGroups();
+    else if (viewName === 'messages') this.showInbox();
     else if (viewName === 'notifications') this.showNotifications();
   },
 

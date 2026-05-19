@@ -173,14 +173,22 @@ export const settingsMethods = {
 
   async updatePrivacySettings() {
     if (!this.currentUser) return;
+    const locationVisibility = document.getElementById('settings-location-visibility')?.value || 'public';
     const payload = {
       profileVisibility: document.getElementById('settings-profile-visibility')?.value,
-      locationVisibility: document.getElementById('settings-location-visibility')?.value,
+      locationVisibility,
       activityVisibility: document.getElementById('settings-activity-visibility')?.value,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     };
     try {
       await this.db.collection('user_settings').doc(this.currentUser.uid).set(payload, { merge: true });
+      // Propagate visibility change to all user's locations
+      const locSnap = await this.db.collection('locations').where('createdBy', '==', this.currentUser.uid).where('status', '==', 'active').get();
+      if (!locSnap.empty) {
+        const batch = this.db.batch();
+        locSnap.forEach(doc => batch.update(doc.ref, { visibility: locationVisibility }));
+        await batch.commit();
+      }
       this.showToast('Privacy settings updated!', 'success');
     } catch { this.showToast('Failed to update privacy settings', 'error'); }
   },

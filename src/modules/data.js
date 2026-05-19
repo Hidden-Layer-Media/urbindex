@@ -36,6 +36,7 @@ export const dataMethods = {
           if (!Array.isArray(data.coordinates) || data.coordinates.length !== 2) return;
           const [lat, lng] = data.coordinates;
           if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
+          if (data.visibility === 'private' && data.createdBy !== this.currentUser?.uid) return;
           const marker = L.marker([lat, lng], {
             icon: L.divIcon({
               className: 'ub-pin-wrap',
@@ -131,6 +132,7 @@ export const dataMethods = {
       feed.innerHTML = '';
       snap.forEach(doc => {
         const data = doc.data();
+        if (data.visibility === 'private' && data.createdBy !== this.currentUser?.uid) return;
         const item = document.createElement('div');
         item.className = 'activity-item';
         item.innerHTML = `
@@ -347,7 +349,7 @@ export const dataMethods = {
         const el = document.createElement('div');
         el.className = 'panel group-card';
         el.innerHTML = `
-          <div class="group-card-info">
+          <div class="group-card-info" onclick="app.showGroupDetail('${doc.id}')" style="cursor:pointer;">
             <div class="group-card-header">
               <h4>${this.escapeHtml(d.name || 'Unnamed Group')}</h4>
               ${joined ? '<span class="chip live">JOINED</span>' : ''}
@@ -359,7 +361,8 @@ export const dataMethods = {
           </div>
           ${this.currentUser ? `
             <div class="group-card-actions">
-              <button class="btn btn-sm ${joined ? 'btn-danger' : 'btn-primary'}" id="group-btn-${doc.id}" onclick="app.joinGroup('${doc.id}')">
+              <button class="btn btn-sm" onclick="app.showGroupDetail('${doc.id}')"><i class="fas fa-arrow-right"></i></button>
+              <button class="btn btn-sm ${joined ? 'btn-danger' : 'btn-primary'}" id="group-btn-${doc.id}" onclick="event.stopPropagation();app.joinGroup('${doc.id}')">
                 <i class="fas fa-${joined ? 'sign-out-alt' : 'sign-in-alt'}"></i> ${joined ? 'Leave' : 'Join'}
               </button>
             </div>` : ''}`;
@@ -404,6 +407,91 @@ export const dataMethods = {
       await this.db.collection('groups').add({ name, description: desc, createdBy: this.currentUser.uid, memberCount: 1, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
       this.showToast('Group created!', 'success'); this.loadGroups();
     });
+  },
+
+  async showGroupDetail(groupId) {
+    const view = document.getElementById('groups-view-content');
+    if (!view) return;
+    view.innerHTML = `
+      <div class="view-header">
+        <button class="btn btn-sm" onclick="app.showGroups()"><i class="fas fa-arrow-left"></i> Groups</button>
+        <h2 id="group-detail-title">// LOADING...</h2>
+        <div id="group-detail-actions"></div>
+      </div>
+      <div id="group-detail-body" class="loading">Loading group...</div>`;
+
+    try {
+      const uid = this.currentUser?.uid;
+      const [groupDoc, memberSnap] = await Promise.all([
+        this.db.collection('groups').doc(groupId).get(),
+        this.db.collection('group_members').where('groupId', '==', groupId).get(),
+      ]);
+
+      if (!groupDoc.exists) { view.querySelector('#group-detail-body').innerHTML = '<div class="error">Group not found</div>'; return; }
+      const g = groupDoc.data();
+      const memberIds = memberSnap.docs.map(d => d.data().userId);
+      const joined = memberIds.includes(uid);
+
+      document.getElementById('group-detail-title').textContent = `// ${g.name || 'GROUP'}`;
+      const actionsEl = document.getElementById('group-detail-actions');
+      if (uid) {
+        actionsEl.innerHTML = `<button class="btn btn-sm ${joined ? 'btn-danger' : 'btn-primary'}" onclick="app.joinGroup('${groupId}').then(()=>app.showGroupDetail('${groupId}'))">
+          <i class="fas fa-${joined ? 'sign-out-alt' : 'sign-in-alt'}"></i> ${joined ? 'Leave' : 'Join'}
+        </button>`;
+      }
+
+      // Fetch member user docs (up to 10 at a time for 'in' query)
+      const memberUsers = [];
+      const chunks = [];
+      for (let i = 0; i < memberIds.length; i += 10) chunks.push(memberIds.slice(i, i + 10));
+      for (const chunk of chunks) {
+        if (!chunk.length) continue;
+        const snap = await this.db.collection('users').where(firebase.firestore.FieldPath.documentId(), 'in', chunk).get();
+        snap.forEach(d => memberUsers.push({ id: d.id, ...d.data() }));
+      }
+
+      // Fetch locations from members (up to first 10 members)
+      const locChunk = memberIds.slice(0, 10);
+      let locRows = '';
+      if (locChunk.length) {
+        const locSnap = await this.db.collection('locations').where('createdBy', 'in', locChunk).where('status', '==', 'active').orderBy('createdAt', 'desc').limit(20).get();
+        locRows = locSnap.empty
+          ? '<div class="empty-state">No locations from group members yet.</div>'
+          : [...locSnap.docs].map(doc => {
+            const d = doc.data();
+            const [lat, lng] = Array.isArray(d.coordinates) ? d.coordinates : [null, null];
+            return `<div class="location-card">
+              <div class="location-header">
+                <h4>${this.escapeHtml(d.name || 'Unnamed')}</h4>
+                <span class="risk risk-${d.riskLevel || 'unknown'}">${d.riskLevel || 'unknown'}</span>
+              </div>
+              <p class="location-card-desc">${this.escapeHtml((d.description || '').substring(0, 80))}${(d.description || '').length > 80 ? '...' : ''}</p>
+              <div class="location-card-meta"><i class="fas fa-user"></i> ${this.escapeHtml(d.createdByName || 'Explorer')}</div>
+              ${lat != null ? `<div class="location-actions"><button class="btn btn-sm" onclick="app.focusMapOnLocation(${lat},${lng})"><i class="fas fa-map"></i> View on Map</button></div>` : ''}
+            </div>`;
+          }).join('');
+      }
+
+      const memberListHtml = memberUsers.length
+        ? memberUsers.map(u => `<div class="group-member-row">
+            <div class="group-member-avatar">${(u.displayName || 'E').charAt(0).toUpperCase()}</div>
+            <span class="group-member-name" onclick="app.showView('profile','${u.id}')" style="cursor:pointer;">${this.escapeHtml(u.displayName || 'Explorer')}</span>
+          </div>`).join('')
+        : '<div class="empty-state">No members yet.</div>';
+
+      document.getElementById('group-detail-body').innerHTML = `
+        ${g.description ? `<div class="panel"><div class="panel-body">${this.escapeHtml(g.description)}</div></div>` : ''}
+        <div class="group-detail-grid">
+          <section class="panel group-members-panel">
+            <div class="panel-header"><i class="fas fa-users"></i> Members (${memberIds.length})</div>
+            <div class="panel-body group-member-list">${memberListHtml}</div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><i class="fas fa-map-marker-alt"></i> Member Locations</div>
+            <div class="locations-grid">${locRows}</div>
+          </section>
+        </div>`;
+    } catch { document.getElementById('group-detail-body').innerHTML = '<div class="error">Failed to load group</div>'; }
   },
 
   _showQuickCreateModal(type, namePlaceholder, submitLabel, onSubmit) {

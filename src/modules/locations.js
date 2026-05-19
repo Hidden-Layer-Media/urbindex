@@ -29,6 +29,10 @@ export const locationsMethods = {
     }
     const addrEl = document.getElementById('location-address');
     if (addrEl) addrEl.value = '';
+    const photosEl = document.getElementById('location-photos');
+    if (photosEl) photosEl.value = '';
+    const photosPreview = document.getElementById('location-photos-preview');
+    if (photosPreview) photosPreview.innerHTML = '';
     if (this.tempMarker && this.map) { this.map.removeLayer(this.tempMarker); this.tempMarker = null; }
     this.clearTags();
   },
@@ -63,6 +67,9 @@ export const locationsMethods = {
     if (tags.length > 10) errs.push('Maximum 10 tags allowed');
     for (const t of tags) { if (t.length > 25) { errs.push('Each tag must be less than 25 characters'); break; } }
 
+    const photos = (document.getElementById('location-photos')?.value || '')
+      .split(/\n+/).map(u => u.trim()).filter(u => /^https?:\/\/.+/i.test(u)).slice(0, 10);
+
     if (errs.length) { this.showToast(errs.join('. '), 'warning'); return; }
 
     this.activeOperations.add(opKey);
@@ -76,6 +83,7 @@ export const locationsMethods = {
       riskLevel: document.getElementById('location-risk').value,
       address: this.sanitizeInput(document.getElementById('location-address').value.trim()),
       tags,
+      photos,
       coordinates: coords,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     };
@@ -90,6 +98,11 @@ export const locationsMethods = {
         payload.createdByName = this.currentUser.displayName || 'Explorer';
         payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
         payload.status = 'active';
+        // inherit user's location visibility preference
+        try {
+          const settingsDoc = await this.db.collection('user_settings').doc(this.currentUser.uid).get();
+          payload.visibility = settingsDoc.exists ? (settingsDoc.data().locationVisibility || 'public') : 'public';
+        } catch { payload.visibility = 'public'; }
         await this.db.collection('locations').add(payload);
         this.showToast('Location added successfully!', 'success');
         await this.updateUserBadges(this.currentUser.uid, 'add_location');
@@ -144,6 +157,8 @@ export const locationsMethods = {
         const cd = document.getElementById('coordinates-display');
         if (cd) cd.textContent = `${data.coordinates[0].toFixed(6)}, ${data.coordinates[1].toFixed(6)}`;
       }
+      const photosEl = document.getElementById('location-photos');
+      if (photosEl) photosEl.value = (data.photos || []).join('\n');
       this.loadTagsForLocation(data);
       const titleEl = document.querySelector('#location-modal-overlay .modal-titlebar-text');
       if (titleEl) titleEl.textContent = 'URBINDEX :: EDIT LOCATION';
