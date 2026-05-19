@@ -3143,6 +3143,16 @@ select.select:focus {
   margin: 0;
 }
 
+/* ── Load more ── */
+.feed-load-more {
+  text-align: center;
+  padding: 16px 0 8px;
+}
+.feed-load-more .btn {
+  letter-spacing: 2px;
+  font-size: 11px;
+}
+
 /* ── Feed card ── */
 .feed-card {
   background: var(--black-panel);

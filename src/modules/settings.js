@@ -46,15 +46,15 @@ export const settingsMethods = {
         <h3 class="settings-section-title"><i class="fas fa-bell"></i> Notification Preferences</h3>
         <div class="form-group">
           <label class="form-label">Email Notifications</label>
-          <select class="select" id="settings-email-notifications"><option value="all">All Activity</option><option value="important">Important Only</option><option value="none">Disabled</option></select>
+          <select class="input" id="settings-email-notifications"><option value="all">All Activity</option><option value="important">Important Only</option><option value="none">Disabled</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Push Notifications</label>
-          <select class="select" id="settings-push-notifications"><option value="enabled">Enabled</option><option value="disabled">Disabled</option></select>
+          <select class="input" id="settings-push-notifications"><option value="enabled">Enabled</option><option value="disabled">Disabled</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Frequency</label>
-          <select class="select" id="settings-notification-frequency"><option value="realtime">Real-time</option><option value="hourly">Hourly Digest</option><option value="daily">Daily Digest</option><option value="weekly">Weekly Summary</option></select>
+          <select class="input" id="settings-notification-frequency"><option value="realtime">Real-time</option><option value="hourly">Hourly Digest</option><option value="daily">Daily Digest</option><option value="weekly">Weekly Summary</option></select>
         </div>
         <div class="form-actions">
           <button class="btn btn-primary" onclick="app.updateNotificationSettings()"><i class="fas fa-save"></i> Save Preferences</button>
@@ -65,15 +65,15 @@ export const settingsMethods = {
         <h3 class="settings-section-title"><i class="fas fa-shield-alt"></i> Privacy &amp; Security</h3>
         <div class="form-group">
           <label class="form-label">Profile Visibility</label>
-          <select class="select" id="settings-profile-visibility"><option value="public">Public</option><option value="followers">Followers Only</option><option value="private">Private</option></select>
+          <select class="input" id="settings-profile-visibility"><option value="public">Public</option><option value="followers">Followers Only</option><option value="private">Private</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Location Visibility</label>
-          <select class="select" id="settings-location-visibility"><option value="public">Public (Show on map)</option><option value="followers">Followers Only</option><option value="private">Private</option></select>
+          <select class="input" id="settings-location-visibility"><option value="public">Public (Show on map)</option><option value="followers">Followers Only</option><option value="private">Private</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Activity Feed Visibility</label>
-          <select class="select" id="settings-activity-visibility"><option value="public">Public</option><option value="followers">Followers Only</option><option value="private">Private</option></select>
+          <select class="input" id="settings-activity-visibility"><option value="public">Public</option><option value="followers">Followers Only</option><option value="private">Private</option></select>
         </div>
         <div class="form-actions">
           <button class="btn btn-primary" onclick="app.updatePrivacySettings()"><i class="fas fa-save"></i> Save Privacy Settings</button>
@@ -84,11 +84,11 @@ export const settingsMethods = {
         <h3 class="settings-section-title"><i class="fas fa-palette"></i> Display &amp; Interface</h3>
         <div class="form-group">
           <label class="form-label">Map Tile Style</label>
-          <select class="select" id="settings-map-style"><option value="default">OpenStreetMap Default</option><option value="dark">Dark Mode Map</option><option value="terrain">Terrain View</option></select>
+          <select class="input" id="settings-map-style"><option value="default">OpenStreetMap Default</option><option value="dark">Dark Mode Map</option><option value="terrain">Terrain View</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Visual Intensity</label>
-          <select class="select" id="settings-intensity" onchange="app.updateTerminalIntensity(this.value)">
+          <select class="input" id="settings-intensity" onchange="app.updateTerminalIntensity(this.value)">
             <option value="0.2">Low</option>
             <option value="0.5" selected>Medium</option>
             <option value="0.8">High</option>

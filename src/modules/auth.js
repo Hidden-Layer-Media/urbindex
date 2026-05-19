@@ -463,6 +463,11 @@ export const authMethods = {
       const settingsDoc = await this.db.collection('user_settings').doc(this.currentUser.uid).get();
       this._locationVisibility = settingsDoc.exists ? (settingsDoc.data().locationVisibility || 'public') : 'public';
     } catch { this._locationVisibility = 'public'; }
+    try {
+      const followSnap = await this.db.collection('user_followers')
+        .where('followerId', '==', this.currentUser.uid).get();
+      this._followingIds = new Set(followSnap.docs.map(d => d.data().followingId));
+    } catch { this._followingIds = new Set(); }
   },
 
   handleProfileButtonClick() {

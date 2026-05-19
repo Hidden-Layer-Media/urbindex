@@ -1,5 +1,7 @@
 export const socialMethods = {
   _socialFilterType: 'all',
+  _socialFeedLastDoc: null,
+  _socialFeedPageSize: 20,
 
   showSocialFeed() {
     const view = document.getElementById('social-view-content');
@@ -67,7 +69,7 @@ export const socialMethods = {
             <span class="feed-search-icon"><i class="fas fa-search"></i></span>
             <input class="feed-search-input" id="social-search" placeholder="search posts..." oninput="app.searchSocialFeed()">
           </div>
-          <select class="select feed-sort-select" id="social-sort-by" onchange="app.filterSocialFeed()">
+          <select class="input feed-sort-select" id="social-sort-by" onchange="app.filterSocialFeed()">
             <option value="recent">recent</option>
             <option value="popular">popular</option>
           </select>
@@ -118,21 +120,47 @@ export const socialMethods = {
     const refreshBtn = document.getElementById('social-refresh-btn');
     if (refreshBtn) { refreshBtn.disabled = true; refreshBtn.querySelector('i')?.classList.add('fa-spin'); }
     container.innerHTML = '<div class="loading">Loading...</div>';
+    this._socialFeedLastDoc = null;
     try {
-      const snap = await this.db.collection('forum').orderBy('createdAt', 'desc').limit(50).get();
+      const snap = await this.db.collection('forum')
+        .orderBy('createdAt', 'desc')
+        .limit(this._socialFeedPageSize)
+        .get();
       const items = [];
       snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+      this._socialFeedLastDoc = snap.docs[snap.docs.length - 1] || null;
       this.socialFeedItems = items;
       this.updateSocialMeta(items);
       this.renderTrendingTags(items);
       const filtered = this.applySocialFilters(items);
-      this.renderSocialFeed(filtered);
+      this.renderSocialFeed(filtered, snap.size === this._socialFeedPageSize);
       this.updateSocialRefreshTime();
       await this.hydrateSocialEngagement(filtered);
     } catch { container.innerHTML = '<div class="error">Failed to load feed</div>'; }
     finally {
       if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.querySelector('i')?.classList.remove('fa-spin'); }
     }
+  },
+
+  async loadMoreSocialFeed() {
+    if (!this._socialFeedLastDoc) return;
+    const btn = document.getElementById('social-load-more');
+    if (btn) { btn.disabled = true; btn.textContent = 'loading...'; }
+    try {
+      const snap = await this.db.collection('forum')
+        .orderBy('createdAt', 'desc')
+        .startAfter(this._socialFeedLastDoc)
+        .limit(this._socialFeedPageSize)
+        .get();
+      if (snap.empty) { this._socialFeedLastDoc = null; if (btn) btn.remove(); return; }
+      const newItems = [];
+      snap.forEach(doc => newItems.push({ id: doc.id, ...doc.data() }));
+      this._socialFeedLastDoc = snap.docs[snap.docs.length - 1];
+      this.socialFeedItems = [...(this.socialFeedItems || []), ...newItems];
+      const hasMore = snap.size === this._socialFeedPageSize;
+      this._appendSocialFeedItems(newItems, hasMore);
+      await this.hydrateSocialEngagement(newItems);
+    } catch { if (btn) { btn.disabled = false; btn.textContent = 'load more'; } }
   },
 
   updateSocialMeta(items) {
@@ -188,7 +216,8 @@ export const socialMethods = {
     let result = [...items];
     if (type === 'locations') result = result.filter(i => i.locationId);
     if (type === 'following' && this.currentUser) {
-      result = result.filter(i => i.createdBy === this.currentUser.uid);
+      const ids = this._followingIds || new Set();
+      result = result.filter(i => ids.has(i.createdBy));
     }
     if (search) {
       const tag = search.startsWith('#') ? search.slice(1) : null;
@@ -210,7 +239,7 @@ export const socialMethods = {
 
   searchSocialFeed() { this.filterSocialFeed(); },
 
-  renderSocialFeed(activities) {
+  renderSocialFeed(activities, hasMore = false) {
     const container = document.getElementById('social-feed-container');
     if (!container) return;
     if (!activities?.length) {
@@ -283,6 +312,76 @@ export const socialMethods = {
         </div>`;
       container.appendChild(el);
     });
+    if (hasMore) {
+      const loadMoreBtn = document.createElement('div');
+      loadMoreBtn.className = 'feed-load-more';
+      loadMoreBtn.innerHTML = `<button class="btn btn-sm" id="social-load-more" onclick="app.loadMoreSocialFeed()">// load more</button>`;
+      container.appendChild(loadMoreBtn);
+    }
+  },
+
+  _appendSocialFeedItems(items, hasMore) {
+    const container = document.getElementById('social-feed-container');
+    if (!container) return;
+    const existing = document.getElementById('social-load-more');
+    if (existing) existing.parentElement?.remove();
+    items.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'feed-card';
+      el.dataset.postId = item.id;
+      const ts = item.createdAt?.toDate ? this.timeAgo(item.createdAt.toDate()) : 'recently';
+      const handle = this.escapeHtml(item.displayName || 'Explorer');
+      const initials = (item.displayName || 'EX').slice(0, 2).toUpperCase();
+      const body = this.escapeHtml(item.body || '');
+      const tags = (item.tags || []).filter(Boolean)
+        .map(t => `<button class="feed-tag" onclick="app.applyTagFilter('${this.escapeHtml(t)}')">#${this.escapeHtml(t)}</button>`).join('');
+      const isOwn = this.currentUser && item.createdBy === this.currentUser.uid;
+      const isOther = this.currentUser && !isOwn && item.createdBy;
+      const headActions = `
+        ${isOther ? `<button class="feed-follow-btn btn btn-sm" id="follow-feed-${item.createdBy}" onclick="app.toggleFollowFromFeed('${item.createdBy}')">Follow</button>` : ''}
+        ${isOwn ? `<button class="feed-delete-btn" title="Delete post" onclick="app.deleteOwnPost('${item.id}',this)"><i class="fas fa-trash"></i></button>` : ''}`;
+      const locationAction = item.locationId
+        ? `<button class="feed-action" onclick="app.viewPostLocation('${item.id}','${item.locationId}')" title="View location"><i class="fas fa-map-marker-alt"></i></button>` : '';
+      el.innerHTML = `
+        <div class="feed-card-head">
+          <div class="feed-card-avatar">${initials}</div>
+          <div class="feed-card-identity">
+            <span class="feed-card-handle">${handle}</span>
+            <span class="feed-card-time">// ${ts}</span>
+          </div>
+          <div class="feed-card-head-actions">${headActions}</div>
+        </div>
+        <div class="feed-card-body">${body}</div>
+        ${tags ? `<div class="feed-card-tags">${tags}</div>` : ''}
+        <div class="feed-card-foot">
+          <div class="feed-actions-left">
+            <button class="feed-action feed-like-btn" id="like-btn-${item.id}" onclick="app.togglePostLike('${item.id}')" title="Like">
+              <i class="fas fa-heart"></i><span id="like-count-${item.id}">${item.likesCount || 0}</span>
+            </button>
+            <button class="feed-action" onclick="app.togglePostComments('${item.id}')" title="Comments">
+              <i class="fas fa-comment-alt"></i><span>${item.commentCount || 0}</span>
+            </button>
+            ${locationAction}
+          </div>
+          <span class="feed-card-id">// ${item.id.slice(0, 8)}</span>
+        </div>
+        <div id="comments-panel-${item.id}" class="feed-comments hidden">
+          <div id="post-comments-${item.id}" class="feed-comments-list"></div>
+          ${this.currentUser ? `
+            <div class="feed-comment-form">
+              <span class="feed-composer-gt">&gt;</span>
+              <input class="feed-comment-input" id="comment-field-${item.id}" placeholder="add intel...">
+              <button class="btn btn-primary btn-sm" onclick="app.submitPostComment('${item.id}')"><i class="fas fa-paper-plane"></i></button>
+            </div>` : ''}
+        </div>`;
+      container.appendChild(el);
+    });
+    if (hasMore) {
+      const loadMoreBtn = document.createElement('div');
+      loadMoreBtn.className = 'feed-load-more';
+      loadMoreBtn.innerHTML = `<button class="btn btn-sm" id="social-load-more" onclick="app.loadMoreSocialFeed()">// load more</button>`;
+      container.appendChild(loadMoreBtn);
+    }
   },
 
   async hydrateSocialEngagement(items = []) {

@@ -113,6 +113,8 @@ export const profileMethods = {
               <div class="profile-stat-row"><span class="profile-stat-num" id="profile-followers-count">--</span><span class="profile-stat-name">Followers</span></div>
               <div class="profile-stat-row"><span class="profile-stat-num" id="profile-following-count">--</span><span class="profile-stat-name">Following</span></div>
               <div class="profile-stat-row"><span class="profile-stat-num" id="profile-likes-count">--</span><span class="profile-stat-name">Likes</span></div>
+              <div class="profile-stat-row"><span class="profile-stat-num" id="profile-visits-count">--</span><span class="profile-stat-name">Visits</span></div>
+              <div class="profile-stat-row"><span class="profile-stat-num" id="profile-badges-count">--</span><span class="profile-stat-name">Badges</span></div>
             </div>
 
             <div class="data-dump-title data-dump-title-spaced">BADGES</div>

@@ -94,3 +94,33 @@ Tile layer: CartoDB DarkMatter (`https://{s}.basemaps.cartocdn.com/dark_all/{z}/
 ### PWA / service worker
 
 Vite PWA plugin auto-generates the service worker. Caching strategy: CacheFirst for OSM/CARTO tiles (200 entries, 7-day TTL), NetworkFirst for Firestore. The manifest theme color is `#FFD000`.
+
+## Current development priorities
+
+### sidelined (do not work on these)
+- **gamification** — XP tracking and badge awarding work passively; the missions view, leaderboards, and rewards UI are intentionally deferred. Don't wire up `showMissions()`, don't add nav entries for it.
+- **routes / journeys** — the data layer stubs exist; leave them alone. No route editor, no map integration, no nav entry.
+
+### active work: make these functional + polish ui
+
+**photo uploads for locations**
+- location schema already has `photos[]` and popup display already renders them
+- need: file input in the add/edit location form, client-side resize before storing URL (use Cloudinary or Firebase Storage), populate `data.photos`
+
+**dm inbox**
+- firestore layer (`direct_messages`) and message creation exist
+- need: inbox view listing conversations, thread view, unread count in nav badge
+
+**groups — fill out the detail view**
+- create/join/leave work
+- need: group detail page (member list, shared location pins filtered to group, basic group post feed)
+
+**privacy enforcement**
+- visibility settings (location visibility, activity visibility) exist in settings.js and are saved to `user_settings`
+- need: apply them — filter `loadLocations()` and `loadActivity()` queries based on the viewer's relationship to the owner
+
+**ui polish targets**
+- fix the dual marker cluster group conflict (see "Known dual cluster group conflict" above) — consolidate to one cluster group created in `data.js`, remove the one in `map.js:initializeMap()`
+- dm / notifications unread badge in the nav
+- consistent empty states across all views (locations list, social feed, groups, profile)
+- profile gallery: replace the raw URL textarea with a proper file input or URL-per-line input with preview thumbnails
