@@ -1,7 +1,8 @@
 export const locationsMethods = {
   showAddLocationModal() {
     if (!this.currentUser) {
-      if (confirm('Sign in required to add locations. Would you like to sign in now?')) this.handleAuth();
+      this.showToast('Sign in required to add locations', 'warning');
+      this.handleAuth();
       return;
     }
     document.getElementById('location-modal-overlay')?.classList.add('active');
@@ -16,15 +17,15 @@ export const locationsMethods = {
       delete form.dataset.editId;
       delete form.dataset.originalCoordinates;
     }
-    const title = document.querySelector('#location-modal-overlay h3');
-    if (title) title.textContent = 'Add Location';
+    const title = document.querySelector('#location-modal-overlay .modal-titlebar-text');
+    if (title) title.textContent = 'URBINDEX :: LOG LOCATION';
     const btn = document.querySelector('#location-form button[type="submit"]');
-    if (btn) btn.textContent = 'Save';
+    if (btn) btn.innerHTML = '<i class="fas fa-save"></i> Save Location';
     this.selectedLatLng = null;
     const coordsDisplay = document.getElementById('coordinates-display');
     if (coordsDisplay) {
       coordsDisplay.textContent = 'Click on map or use address to set location';
-      coordsDisplay.style.color = 'var(--yellow-dim)';
+      coordsDisplay.classList.add('active');
     }
     const addrEl = document.getElementById('location-address');
     if (addrEl) addrEl.value = '';
@@ -66,7 +67,7 @@ export const locationsMethods = {
 
     this.activeOperations.add(opKey);
     const btn = e.target.querySelector('button[type="submit"]');
-    const orig = btn.textContent; btn.textContent = 'Saving...'; btn.disabled = true;
+    this.setButtonLoading(btn, true, 'Saving...');
 
     const payload = {
       name: this.sanitizeInput(name),
@@ -86,11 +87,13 @@ export const locationsMethods = {
         this.showToast('Location updated successfully!', 'success');
       } else {
         payload.createdBy = this.currentUser.uid;
+        payload.createdByName = this.currentUser.displayName || 'Explorer';
         payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
         payload.status = 'active';
         await this.db.collection('locations').add(payload);
         this.showToast('Location added successfully!', 'success');
         await this.updateUserBadges(this.currentUser.uid, 'add_location');
+        this.updateUserXP(this.currentUser.uid, 'add_location');
       }
       this.hideModal();
       this.loadStats();
@@ -98,11 +101,21 @@ export const locationsMethods = {
     } catch (err) {
       const msgs = { 'permission-denied': 'You do not have permission to modify this location', 'not-found': 'Location not found' };
       this.showToast(msgs[err.code] || 'Failed to save location', 'error');
-    } finally { btn.textContent = orig; btn.disabled = false; this.activeOperations.delete(opKey); }
+    } finally { this.setButtonLoading(btn, false); this.activeOperations.delete(opKey); }
   },
 
-  async deleteLocation(id) {
-    if (!confirm('Are you sure you want to delete this location? This action cannot be undone.')) return;
+  async deleteLocation(id, btn) {
+    if (btn && !btn.dataset.confirm) {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Confirm?';
+      btn.dataset.confirm = '1';
+      btn.classList.add('btn-confirm-pending');
+      const reset = () => { btn.innerHTML = orig; delete btn.dataset.confirm; btn.classList.remove('btn-confirm-pending'); };
+      btn._confirmTimer = setTimeout(reset, 3000);
+      return;
+    }
+    if (btn?._confirmTimer) clearTimeout(btn._confirmTimer);
+
     const opKey = `delete-${id}`;
     if (this.activeOperations.has(opKey)) return;
     this.activeOperations.add(opKey);
@@ -124,7 +137,7 @@ export const locationsMethods = {
       document.getElementById('location-name').value = data.name || '';
       document.getElementById('location-description').value = data.description || '';
       document.getElementById('location-category').value = data.category || 'other';
-      document.getElementById('location-risk').value = data.riskLevel || 'moderate';
+      document.getElementById('location-risk').value = data.riskLevel || 'medium';
       if (data.address) document.getElementById('location-address').value = data.address;
       if (data.coordinates?.length === 2) {
         this.selectedLatLng = { lat: data.coordinates[0], lng: data.coordinates[1] };
@@ -132,8 +145,10 @@ export const locationsMethods = {
         if (cd) cd.textContent = `${data.coordinates[0].toFixed(6)}, ${data.coordinates[1].toFixed(6)}`;
       }
       this.loadTagsForLocation(data);
-      document.querySelector('#location-modal-overlay h3').textContent = 'Edit Location';
-      document.querySelector('#location-form button[type="submit"]').textContent = 'Update Location';
+      const titleEl = document.querySelector('#location-modal-overlay .modal-titlebar-text');
+      if (titleEl) titleEl.textContent = 'URBINDEX :: EDIT LOCATION';
+      const submitBtn = document.querySelector('#location-form button[type="submit"]');
+      if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Location';
       document.getElementById('location-form').dataset.editId = id;
       document.getElementById('location-form').dataset.originalCoordinates = JSON.stringify(data.coordinates || null);
       this.showAddLocationModal();
@@ -145,10 +160,10 @@ export const locationsMethods = {
     if (!grid) return;
     if (!this.currentUser) {
       grid.innerHTML = `
-        <div style="text-align:center;padding:48px;">
-          <i class="fas fa-lock" style="font-size:3rem;color:var(--text-muted);margin-bottom:16px;display:block;"></i>
-          <h3 style="color:var(--text);margin-bottom:12px;">// SIGN IN REQUIRED</h3>
-          <p style="color:var(--text-muted);margin-bottom:20px;">Create an account to start tracking your urban exploration locations</p>
+        <div class="sign-in-prompt">
+          <i class="fas fa-lock"></i>
+          <h3>// SIGN IN REQUIRED</h3>
+          <p class="text-muted mb-20">Create an account to start tracking your urban exploration locations</p>
           <button class="btn btn-primary" onclick="app.handleAuth()"><i class="fas fa-sign-in-alt"></i> Sign In Now</button>
         </div>`;
       return;
@@ -156,7 +171,7 @@ export const locationsMethods = {
     grid.innerHTML = '<div class="loading">Loading your locations...</div>';
     try {
       const snap = await this.db.collection('locations').where('createdBy', '==', this.currentUser.uid).where('status', '==', 'active').orderBy('createdAt', 'desc').get();
-      if (snap.empty) { grid.innerHTML = '<div style="text-align:center;padding:48px;color:var(--text-muted);">[ NO LOCATIONS ] — Add your first location!</div>'; return; }
+      if (snap.empty) { grid.innerHTML = '<div class="empty-state">[ NO LOCATIONS ] — Add your first location!</div>'; return; }
       this.allUserLocations = [];
       snap.forEach(doc => this.allUserLocations.push({ id: doc.id, data: doc.data() }));
       this.renderFilteredLocations();
@@ -192,7 +207,7 @@ export const locationsMethods = {
 
     const grid = document.getElementById('locations-grid');
     if (!grid) return;
-    if (!filtered.length) { grid.innerHTML = '<div style="text-align:center;padding:48px;color:var(--text-muted);">[ NO RESULTS ] — No locations match your criteria.</div>'; return; }
+    if (!filtered.length) { grid.innerHTML = '<div class="empty-state">[ NO RESULTS ] — No locations match your criteria.</div>'; return; }
 
     grid.innerHTML = '';
     grid.className = 'locations-grid';
@@ -205,26 +220,25 @@ export const locationsMethods = {
           <h4>${this.escapeHtml(data.name)}</h4>
           <span class="risk risk-${data.riskLevel}">${data.riskLevel}</span>
         </div>
-        <p style="color:var(--text-dim);margin-bottom:12px;">${this.escapeHtml(data.description)}</p>
-        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:12px;">
+        <p class="location-card-desc">${this.escapeHtml(data.description)}</p>
+        <div class="location-card-meta">
           <i class="fas fa-tag"></i> ${this.escapeHtml(data.category)}
           ${data.tags?.length ? ` • <i class="fas fa-tags"></i> ${data.tags.slice(0,3).map(t => this.escapeHtml(t)).join(', ')}` : ''}
           ${data.coordinates ? ` • <i class="fas fa-map-marker-alt"></i> ${data.coordinates[0].toFixed(4)}, ${data.coordinates[1].toFixed(4)}` : ''}
         </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <div class="location-card-score">
           <button class="rating-btn" onclick="app.rateLocation('${id}',1)" title="Upvote"><i class="fas fa-thumbs-up"></i></button>
           <span class="cz-text">Score: <span id="rating-score-${id}">${score.toFixed(1)}</span></span>
           <button class="rating-btn" onclick="app.rateLocation('${id}',-1)" title="Downvote"><i class="fas fa-thumbs-down"></i></button>
         </div>
         <div class="location-actions">
           <button class="btn" onclick="app.editLocation('${id}')"><i class="fas fa-edit"></i> Edit</button>
-          <button class="btn" style="background:var(--red-alert);color:#000;" onclick="app.deleteLocation('${id}')"><i class="fas fa-trash"></i> Delete</button>
-          <button class="btn" onclick="app.focusMapOnLocation(${data.coordinates?.[0]||0},${data.coordinates?.[1]||0})"><i class="fas fa-map"></i> Map</button>
+          <button class="btn btn-danger" onclick="app.deleteLocation('${id}',this)"><i class="fas fa-trash"></i> Delete</button>
+          ${data.coordinates ? `<button class="btn" onclick="app.focusMapOnLocation(${data.coordinates[0]},${data.coordinates[1]})"><i class="fas fa-map"></i> Map</button>` : ''}
         </div>`;
       grid.appendChild(card);
       this.loadLocationRating(id);
     });
-    this.updateMapMarkers(filtered);
   },
 
   getLocationScore(data) { return (data.likesCount || 0) + (data.visitCount || 0) * 0.5 + (data.commentCount || 0) * 0.3; },
@@ -318,6 +332,7 @@ export const locationsMethods = {
       await this.db.collection('locations').doc(locationId).update({
         commentCount: firebase.firestore.FieldValue.increment(1)
       });
+      this.updateUserXP(this.currentUser.uid, 'add_comment');
       this.loadLocationComments(locationId);
     } catch { this.showToast('Failed to add comment', 'error'); }
   },
@@ -327,13 +342,13 @@ export const locationsMethods = {
       const snap = await this.db.collection('location_comments').where('locationId', '==', locationId).orderBy('createdAt', 'desc').limit(20).get();
       const container = document.getElementById(`comments-${locationId}`);
       if (!container) return;
-      if (snap.empty) { container.innerHTML = '<div style="color:var(--text-muted);">No comments yet.</div>'; return; }
+      if (snap.empty) { container.innerHTML = '<div class="text-muted">No comments yet.</div>'; return; }
       container.innerHTML = '';
       snap.forEach(doc => {
         const d = doc.data();
         const el = document.createElement('div');
         el.className = 'comment';
-        el.innerHTML = `<strong>${this.escapeHtml(d.displayName)}</strong> <span style="color:var(--text-muted);font-size:0.85rem;">${this.timeAgo(d.createdAt?.toDate?.())}</span><p>${this.escapeHtml(d.text)}</p>`;
+        el.innerHTML = `<span class="comment-user">${this.escapeHtml(d.displayName)}</span><span class="comment-time">${this.timeAgo(d.createdAt?.toDate?.())}</span><p>${this.escapeHtml(d.text)}</p>`;
         container.appendChild(el);
       });
     } catch {}
@@ -358,6 +373,7 @@ export const locationsMethods = {
       });
 
       await this.updateUserBadges(this.currentUser.uid, 'check_in');
+      this.updateUserXP(this.currentUser.uid, 'check_in');
       this.showToast('Checked in!', 'success');
     } catch { this.showToast('Failed to check in', 'error'); }
     finally { this.activeOperations.delete(opKey); }
@@ -370,22 +386,21 @@ export const locationsMethods = {
       const modal = document.getElementById('location-detail-modal');
       const content = document.getElementById('location-detail-content');
       if (!modal || !content) return;
-      const riskColor = this.getRiskColor(data.riskLevel);
       content.innerHTML = `
         <div class="location-modal-header">
           <h3>${this.escapeHtml(data.name || 'Location')}</h3>
           <button class="modal-close" onclick="document.getElementById('location-detail-modal').classList.remove('active')" aria-label="Close">&times;</button>
         </div>
         <div class="modal-body">
-          <div style="margin-bottom:8px;"><span class="badge" style="background:${riskColor};color:#000;padding:2px 8px;font-size:0.8rem;">${data.riskLevel || 'unknown'}</span> <span class="text-muted">${this.escapeHtml(data.category || '')}</span></div>
-          <p style="margin-bottom:12px;">${this.escapeHtml(data.description || '')}</p>
-          ${data.tags?.length ? `<div style="margin-bottom:12px;">${data.tags.map(t => `<span class="tag">${this.escapeHtml(t)}</span>`).join(' ')}</div>` : ''}
-          ${this.currentUser ? `<div class="flex gap-8" style="margin-top:12px;">
+          <div class="location-detail-meta"><span class="risk risk-${data.riskLevel || 'unknown'}">${data.riskLevel || 'unknown'}</span> <span class="text-muted">${this.escapeHtml(data.category || '')}</span></div>
+          <p class="location-detail-desc">${this.escapeHtml(data.description || '')}</p>
+          ${data.tags?.length ? `<div class="location-detail-tags">${data.tags.map(t => `<span class="tag">${this.escapeHtml(t)}</span>`).join(' ')}</div>` : ''}
+          ${this.currentUser ? `<div class="flex gap-8 location-detail-actions">
             <button class="btn btn-primary" onclick="app.checkInLocation('${locationId}')" aria-label="Check In"><i class="fas fa-map-marker-alt"></i> Check In</button>
             <button class="btn" onclick="app.likeLocation('${locationId}')" aria-label="Like"><i class="fas fa-heart"></i> Like</button>
           </div>` : '<p class="text-muted">Sign in for more actions.</p>'}
-          <div id="comments-${locationId}" style="margin-top:16px;"></div>
-          ${this.currentUser ? `<div class="flex gap-8" style="margin-top:8px;">
+          <div id="comments-${locationId}" class="location-detail-comments"></div>
+          ${this.currentUser ? `<div class="flex gap-8 location-detail-comment-form">
             <input class="form-control" id="comment-input-${locationId}" placeholder="Add a comment..." aria-label="Comment">
             <button class="btn btn-primary" onclick="app.addComment('${locationId}',document.getElementById('comment-input-${locationId}').value)"><i class="fas fa-paper-plane"></i></button>
           </div>` : ''}
@@ -395,7 +410,6 @@ export const locationsMethods = {
     }).catch(() => this.showToast('Failed to load location details', 'error'));
   },
 
-  // Tag system
   initTagSystem() {
     this.selectedTags = new Set();
     this.predefinedTags = ['historic','architecture','nature','underground','hidden','photo-worthy','challenging','accessible','urban','industrial','abandoned','safe','dangerous','family-friendly','night-time','day-time','rooftop','basement','warehouse','bridge','tunnel','park','waterfront'];
@@ -474,17 +488,4 @@ export const locationsMethods = {
     if (errors.length) this.announceToScreenReader(`Form validation errors: ${errors.map(e => e.message).join(', ')}`, 'assertive');
   },
 
-  validateFormField(input, errorId, msg) {
-    const el = document.getElementById(errorId);
-    if (msg) {
-      input.setAttribute('aria-invalid', 'true');
-      input.setAttribute('aria-describedby', errorId);
-      if (el) { el.textContent = msg; el.style.display = 'block'; }
-      return false;
-    }
-    input.setAttribute('aria-invalid', 'false');
-    input.removeAttribute('aria-describedby');
-    if (el) { el.textContent = ''; el.style.display = 'none'; }
-    return true;
-  },
 };

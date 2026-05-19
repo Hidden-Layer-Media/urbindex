@@ -26,10 +26,6 @@ export const firebaseMethods = {
     }
     try {
       await this.db.enablePersistence({ synchronizeTabs: true });
-    } catch (err) {
-      if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') {
-        console.warn('Persistence error:', err.code);
-      }
-    }
+    } catch {}
   },
 };

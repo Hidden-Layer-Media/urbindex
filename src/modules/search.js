@@ -5,7 +5,6 @@ export const searchMethods = {
     
     input?.addEventListener('input', () => this.performGlobalSearch(input.value));
     
-    // Simple focus trap
     modal?.addEventListener('keydown', (e) => {
       if (e.key === 'Tab') {
         const focusable = modal.querySelectorAll('input, button');
@@ -39,8 +38,10 @@ export const searchMethods = {
       if (!items.length) { results.innerHTML = '<div class="empty-state">No results found.</div>'; return; }
 
       results.innerHTML = items.map(i => `
-        <div class="search-result" style="padding:8px; border-bottom:1px solid var(--border-dim); cursor:pointer;" onclick="app.handleSearchResult('${i.type}', '${i.id}')">
-          <i class="fas fa-${i.icon}"></i> <strong>${i.type}:</strong> ${this.escapeHtml(i.name)}
+        <div class="search-result" onclick="app.handleSearchResult('${i.type}', '${i.id}')">
+          <span class="search-result-icon"><i class="fas fa-${i.icon}"></i></span>
+          <span class="search-result-name">${this.escapeHtml(i.name || '—')}</span>
+          <span class="search-result-type">${i.type}</span>
         </div>
       `).join('');
     } catch { results.innerHTML = '<div class="error">Search failed</div>'; }
@@ -49,7 +50,7 @@ export const searchMethods = {
   handleSearchResult(type, id) {
     document.getElementById('search-modal').classList.remove('active');
     if (type === 'Location') this.showLocationDetailModal(id);
-    else if (type === 'Post') this.showView('social'); // Simplified
+    else if (type === 'Post') this.showView('social');
     else if (type === 'User') this.showView('profile', id);
   }
 };

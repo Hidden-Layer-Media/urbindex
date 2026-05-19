@@ -23,7 +23,7 @@ export const uiMethods = {
           this.hideEditProfileModal();
           this.hideUserLocationsModal();
           document.getElementById('search-modal')?.classList.remove('active');
-          document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
+          document.querySelectorAll('.modal-overlay.active').forEach(m => m.remove());
         }
         // Shortcuts: Ctrl+K: Search, Ctrl+M: Map, Ctrl+P: Profile
         if (e.ctrlKey || e.metaKey) {
@@ -66,17 +66,17 @@ export const uiMethods = {
   updateOnlineStatus(isOnline) {
     const dot = document.getElementById('status-dot');
     const text = document.getElementById('status-text');
-    if (dot) dot.style.background = isOnline ? 'var(--green-term)' : 'var(--red-alert)';
+    if (dot) dot.classList.toggle('offline', !isOnline);
     if (text) text.textContent = isOnline ? 'Online' : 'Offline';
   },
 
-  showView(viewName) {
+  showView(viewName, viewParam) {
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
     document.querySelectorAll('.view').forEach(view => view.classList.toggle('active', view.id === `${viewName}-view`));
 
     if (viewName === 'map' && this.map) setTimeout(() => this.map.invalidateSize(), 100);
     else if (viewName === 'locations') this.loadUserLocations();
-    else if (viewName === 'profile') this.loadProfile();
+    else if (viewName === 'profile') this.loadProfile(viewParam || null);
     else if (viewName === 'settings') this.showSettings();
     else if (viewName === 'social') this.showSocialFeed();
     else if (viewName === 'forum') this.showForum();
@@ -143,8 +143,4 @@ export const uiMethods = {
     }
   },
 
-  showLocationModalOverlay() {
-    const modal = document.getElementById('location-modal-overlay');
-    if (modal) modal.classList.add('active');
-  },
 };

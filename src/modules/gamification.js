@@ -13,14 +13,12 @@ export const gamificationMethods = {
         const newLevel = Math.floor(newXP / 100) + 1;
         transaction.set(ref, { xp: newXP, level: newLevel, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       });
-    } catch (e) {
-      console.error('Failed to update XP:', e);
-    }
+    } catch {}
   },
 
   getUserLevelBadge(level) {
-    if (level >= 10) return '<i class="fas fa-skull" style="color:var(--red-alert);"></i> Veteran';
-    if (level >= 5) return '<i class="fas fa-shield-alt" style="color:var(--yellow);"></i> Explorer';
-    return '<i class="fas fa-user" style="color:var(--text-muted);"></i> Scout';
+    if (level >= 10) return '<i class="fas fa-skull level-veteran"></i> Veteran';
+    if (level >= 5) return '<i class="fas fa-shield-alt level-explorer"></i> Explorer';
+    return '<i class="fas fa-user level-scout"></i> Scout';
   }
 };

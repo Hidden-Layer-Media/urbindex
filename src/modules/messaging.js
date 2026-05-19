@@ -3,11 +3,14 @@ export const messageMethods = {
 
   async initMessaging() {
     if (!this.currentUser) return;
-    this._messageUnsubscribe = this.db.collection('user_messages')
+    let initialLoad = true;
+    this._messageUnsubscribe = this.db.collection('direct_messages')
       .where('toUserId', '==', this.currentUser.uid)
       .where('read', '==', false)
       .onSnapshot(snap => {
-        if (!snap.empty) this.showToast(`You have ${snap.size} new message(s)`, 'info');
+        if (initialLoad) { initialLoad = false; return; }
+        const added = snap.docChanges().filter(c => c.type === 'added').length;
+        if (added) this.showToast(`${added} new message${added > 1 ? 's' : ''}`, 'info');
       });
   },
 
@@ -21,7 +24,7 @@ export const messageMethods = {
   async sendMessage(toUserId, body) {
     if (!this.currentUser) return;
     try {
-      await this.db.collection('user_messages').add({
+      await this.db.collection('direct_messages').add({
         fromUserId: this.currentUser.uid,
         fromDisplayName: this.currentUser.displayName || 'Explorer',
         toUserId,

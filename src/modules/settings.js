@@ -3,17 +3,22 @@ export const settingsMethods = {
     const content = document.getElementById('settings-content');
     if (!content) return;
     if (!this.currentUser) {
-      content.innerHTML = `<div style="text-align:center;padding:48px;"><i class="fas fa-lock" style="font-size:3rem;color:var(--text-muted);margin-bottom:16px;"></i><h3>// SIGN IN REQUIRED</h3><p style="color:var(--text-muted);margin-bottom:20px;">Sign in to manage your account settings and preferences</p><button class="btn btn-primary" onclick="app.handleAuth()"><i class="fas fa-sign-in-alt"></i> Sign In Now</button></div>`;
+      content.innerHTML = `
+        <div class="sign-in-prompt">
+          <i class="fas fa-lock"></i>
+          <h3>// SIGN IN REQUIRED</h3>
+          <p class="text-muted mb-20">Sign in to manage your account settings and preferences</p>
+          <button class="btn btn-primary" onclick="app.handleAuth()"><i class="fas fa-sign-in-alt"></i> Sign In Now</button>
+        </div>`;
       return;
     }
     content.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <div class="view-header">
         <h2>// SETTINGS</h2>
-        <button class="btn" onclick="app.showView('map')"><i class="fas fa-map"></i> Back to Map</button>
       </div>
 
-      <div class="panel">
-        <h3 style="margin-bottom:16px;"><i class="fas fa-user-cog"></i> Account Settings</h3>
+      <div class="panel settings-section">
+        <h3 class="settings-section-title"><i class="fas fa-user-cog"></i> Account Settings</h3>
         <div class="form-group">
           <label class="form-label">Display Name</label>
           <input class="input" type="text" id="settings-display-name" value="${this.escapeHtml(this.currentUser.displayName || '')}" placeholder="Your display name">
@@ -25,11 +30,11 @@ export const settingsMethods = {
         </div>
         <div class="form-group">
           <label class="form-label">Account Status</label>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <div class="flex gap-8 flex-wrap items-center">
             <span class="chip ${this.currentUser.emailVerified ? 'live' : 'signal'}"><i class="fas ${this.currentUser.emailVerified ? 'fa-check-circle' : 'fa-clock'}"></i> ${this.currentUser.emailVerified ? 'Verified' : 'Unverified'}</span>
             <span class="chip">${this.currentUser.isAnonymous ? 'Anonymous' : 'Registered'}</span>
             <span class="chip">Joined ${new Date(this.currentUser.metadata?.creationTime).toLocaleDateString()}</span>
-            ${!this.currentUser.emailVerified ? `<button class="btn" style="font-size:0.8rem;padding:3px 8px;" onclick="app.resendVerificationEmail()"><i class="fas fa-envelope"></i> Verify Email</button>` : ''}
+            ${!this.currentUser.emailVerified ? `<button class="btn btn-sm" onclick="app.resendVerificationEmail()"><i class="fas fa-envelope"></i> Verify Email</button>` : ''}
           </div>
         </div>
         <div class="form-actions">
@@ -37,8 +42,8 @@ export const settingsMethods = {
         </div>
       </div>
 
-      <div class="panel" style="margin-top:16px;">
-        <h3 style="margin-bottom:16px;"><i class="fas fa-bell"></i> Notification Preferences</h3>
+      <div class="panel settings-section">
+        <h3 class="settings-section-title"><i class="fas fa-bell"></i> Notification Preferences</h3>
         <div class="form-group">
           <label class="form-label">Email Notifications</label>
           <select class="select" id="settings-email-notifications"><option value="all">All Activity</option><option value="important">Important Only</option><option value="none">Disabled</option></select>
@@ -56,8 +61,8 @@ export const settingsMethods = {
         </div>
       </div>
 
-      <div class="panel" style="margin-top:16px;">
-        <h3 style="margin-bottom:16px;"><i class="fas fa-shield-alt"></i> Privacy &amp; Security</h3>
+      <div class="panel settings-section">
+        <h3 class="settings-section-title"><i class="fas fa-shield-alt"></i> Privacy &amp; Security</h3>
         <div class="form-group">
           <label class="form-label">Profile Visibility</label>
           <select class="select" id="settings-profile-visibility"><option value="public">Public</option><option value="followers">Followers Only</option><option value="private">Private</option></select>
@@ -75,8 +80,8 @@ export const settingsMethods = {
         </div>
       </div>
 
-      <div class="panel" style="margin-top:16px;">
-        <h3 style="margin-bottom:16px;"><i class="fas fa-palette"></i> Display &amp; Interface</h3>
+      <div class="panel settings-section">
+        <h3 class="settings-section-title"><i class="fas fa-palette"></i> Display &amp; Interface</h3>
         <div class="form-group">
           <label class="form-label">Map Tile Style</label>
           <select class="select" id="settings-map-style"><option value="default">OpenStreetMap Default</option><option value="dark">Dark Mode Map</option><option value="terrain">Terrain View</option></select>
@@ -94,24 +99,26 @@ export const settingsMethods = {
         </div>
       </div>
 
-      <div class="panel" style="margin-top:16px;">
-        <h3 style="margin-bottom:16px;"><i class="fas fa-tools"></i> Account Management</h3>
-        <div style="display:flex;flex-direction:column;gap:12px;">
-          <button class="btn" style="background:var(--amber);color:#000;" onclick="app.showChangePasswordModal()"><i class="fas fa-key"></i> Change Password</button>
-          <button class="btn" style="background:var(--yellow);color:#000;" onclick="app.exportData()"><i class="fas fa-download"></i> Export My Data (JSON)</button>
-          <button class="btn" style="background:var(--red-alert);color:#000;" onclick="app.confirmDeleteAccount()"><i class="fas fa-trash-alt"></i> Delete Account Permanently</button>
+      <div class="panel settings-section">
+        <h3 class="settings-section-title"><i class="fas fa-tools"></i> Account Management</h3>
+        <div class="form-actions flex-col">
+          <button class="btn btn-primary" onclick="app.showChangePasswordModal()"><i class="fas fa-key"></i> Change Password</button>
+          <button class="btn btn-primary" onclick="app.exportData()"><i class="fas fa-download"></i> Export My Data (JSON)</button>
+          <button class="btn btn-danger" onclick="app.confirmDeleteAccount()"><i class="fas fa-trash-alt"></i> Delete Account Permanently</button>
         </div>
       </div>
 
-      <div class="panel" style="margin-top:16px;">
-        <h3 style="margin-bottom:16px;"><i class="fas fa-info-circle"></i> App Information</h3>
-        <div style="color:var(--text-dim);font-family:var(--font-mono);font-size:12px;line-height:1.8;">
+      <div class="panel settings-section">
+        <h3 class="settings-section-title"><i class="fas fa-info-circle"></i> App Information</h3>
+        <div class="app-info">
           <div>Version: 2.0.0-vite</div>
           <div>Last Updated: ${new Date().toLocaleDateString()}</div>
           <div>Storage Used: <span id="storage-used">Calculating...</span></div>
           <div>Cache Status: <span id="cache-status">Active</span></div>
         </div>
-        <button class="btn" style="margin-top:12px;" onclick="app.clearCache()"><i class="fas fa-broom"></i> Clear Cache</button>
+        <div class="form-actions">
+          <button class="btn" onclick="app.clearCache()"><i class="fas fa-broom"></i> Clear Cache</button>
+        </div>
       </div>`;
 
     this.loadUserSettings();
@@ -119,7 +126,6 @@ export const settingsMethods = {
   },
 
   async loadUserSettings() {
-    // Load intensity
     const intensity = localStorage.getItem('terminal-intensity');
     if (intensity) this.updateTerminalIntensity(intensity);
 
@@ -127,7 +133,7 @@ export const settingsMethods = {
     try {
       const doc = await this.db.collection('user_settings').doc(this.currentUser.uid).get();
       if (!doc.exists) return;
-      // ... existing load ...
+      const s = doc.data();
 
       const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
       set('settings-email-notifications', s.emailNotifications);
@@ -199,23 +205,28 @@ export const settingsMethods = {
 
   showChangePasswordModal() {
     if (!this.currentUser || this.currentUser.isAnonymous) { this.showToast('Password change not available for anonymous accounts', 'warning'); return; }
-    const modal = document.createElement('div');
-    modal.className = 'modal active';
-    modal.innerHTML = `
-      <div class="modal-content">
-        <button class="modal-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
-        <h3><i class="fas fa-key"></i> Change Password</h3>
-        <form id="change-password-form">
-          <div class="form-group"><label class="form-label required">Current Password</label><input class="input" type="password" id="current-password" required autocomplete="current-password"></div>
-          <div class="form-group"><label class="form-label required">New Password</label><input class="input" type="password" id="new-password" required minlength="8" autocomplete="new-password"><div class="field-help">Minimum 8 characters</div></div>
-          <div class="form-group"><label class="form-label required">Confirm New Password</label><input class="input" type="password" id="confirm-new-password" required autocomplete="new-password"></div>
-          <div class="form-actions">
-            <button type="button" class="btn" onclick="this.closest('.modal').remove()">Cancel</button>
-            <button type="submit" class="btn btn-primary"><i class="fas fa-key"></i> Change Password</button>
-          </div>
-        </form>
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active';
+    overlay.innerHTML = `
+      <div class="modal">
+        <div class="modal-header">
+          <span><i class="fas fa-key"></i> Change Password</span>
+          <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="change-password-form">
+            <div class="form-group"><label class="form-label">Current Password</label><input class="input" type="password" id="current-password" required autocomplete="current-password"></div>
+            <div class="form-group"><label class="form-label">New Password</label><input class="input" type="password" id="new-password" required minlength="8" autocomplete="new-password"><div class="field-help">Minimum 8 characters</div></div>
+            <div class="form-group"><label class="form-label">Confirm New Password</label><input class="input" type="password" id="confirm-new-password" required autocomplete="new-password"></div>
+            <div class="form-actions">
+              <button type="button" class="btn" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+              <button type="submit" class="btn btn-primary"><i class="fas fa-key"></i> Change Password</button>
+            </div>
+          </form>
+        </div>
       </div>`;
-    document.body.appendChild(modal);
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
     document.getElementById('change-password-form').addEventListener('submit', async e => { e.preventDefault(); await this.handlePasswordChange(); });
   },
 
@@ -229,7 +240,7 @@ export const settingsMethods = {
       const cred = firebase.auth.EmailAuthProvider.credential(this.currentUser.email, cur);
       await this.currentUser.reauthenticateWithCredential(cred);
       await this.currentUser.updatePassword(nw);
-      document.querySelector('#change-password-form')?.closest('.modal')?.remove();
+      document.querySelector('#change-password-form')?.closest('.modal-overlay')?.remove();
       this.showToast('Password changed successfully!', 'success');
     } catch (err) {
       const msgs = { 'auth/wrong-password': 'Current password is incorrect', 'auth/weak-password': 'New password is too weak' };
@@ -239,22 +250,27 @@ export const settingsMethods = {
 
   confirmDeleteAccount() {
     if (!this.currentUser) return;
-    const modal = document.createElement('div');
-    modal.className = 'modal active';
-    modal.innerHTML = `
-      <div class="modal-content">
-        <button class="modal-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
-        <h3 style="color:var(--red-alert);"><i class="fas fa-exclamation-triangle"></i> Delete Account</h3>
-        <div style="margin:20px 0;padding:12px;border:1px solid var(--red-alert);">
-          <p style="margin-bottom:12px;">This action is <strong>PERMANENT</strong> and will delete all your locations, posts, and profile data.</p>
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active';
+    overlay.innerHTML = `
+      <div class="modal">
+        <div class="modal-header modal-header-danger">
+          <span><i class="fas fa-exclamation-triangle"></i> Delete Account</span>
+          <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
         </div>
-        <div class="form-group"><label class="form-label required">Type "DELETE" to confirm:</label><input class="input" type="text" id="delete-confirm-text" placeholder="DELETE" autocomplete="off"></div>
-        <div class="form-actions">
-          <button type="button" class="btn" onclick="this.closest('.modal').remove()">Cancel</button>
-          <button type="button" class="btn" style="background:var(--red-alert);color:#000;" onclick="app.executeAccountDeletion()"><i class="fas fa-trash-alt"></i> Delete My Account</button>
+        <div class="modal-body">
+          <div class="danger-notice">
+            <p>This action is <strong>PERMANENT</strong> and will delete all your locations, posts, and profile data.</p>
+          </div>
+          <div class="form-group"><label class="form-label">Type "DELETE" to confirm:</label><input class="input" type="text" id="delete-confirm-text" placeholder="DELETE" autocomplete="off"></div>
+          <div class="form-actions">
+            <button type="button" class="btn" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+            <button type="button" class="btn btn-danger" onclick="app.executeAccountDeletion()"><i class="fas fa-trash-alt"></i> Delete My Account</button>
+          </div>
         </div>
       </div>`;
-    document.body.appendChild(modal);
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   },
 
   async executeAccountDeletion() {
@@ -299,10 +315,7 @@ export const settingsMethods = {
         }
       }
 
-      // Delete the main user document
       await this.db.collection('users').doc(uid).delete();
-      
-      // Delete the Firebase Auth user
       await this.currentUser.delete();
       
       document.querySelectorAll('.modal').forEach(m => m.remove());

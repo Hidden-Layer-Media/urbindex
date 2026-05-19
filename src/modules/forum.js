@@ -32,7 +32,7 @@ export const forumMethods = {
           <div class="forum-stat"><span class="forum-stat-val">--</span><span class="forum-stat-lbl">posts</span></div>
         </div>
         <div class="forum-board-last" id="flast-${b.id}">
-          <span style="color:var(--text-muted);font-size:0.8rem;">loading...</span>
+          <span class="forum-status-text">loading...</span>
         </div>
       </div>
     `).join('');
@@ -40,9 +40,9 @@ export const forumMethods = {
     view.innerHTML = `
       <div class="forum-home-header">
         <div>
-          <div class="cz-label" style="margin-bottom:4px;">Community</div>
-          <h2 style="margin:0 0 4px;">// FORUMS</h2>
-          <p style="color:var(--text-dim);font-size:0.9rem;margin:0;">Drop intel, ask questions, share finds from the field.</p>
+          <div class="cz-label">Community</div>
+          <h2 class="forum-home-title">// FORUMS</h2>
+          <p class="forum-home-subtitle">Drop intel, ask questions, share finds from the field.</p>
         </div>
         ${userHandle
           ? `<div class="forum-user-badge"><i class="fas fa-terminal"></i> ${userHandle}</div>`
@@ -72,7 +72,7 @@ export const forumMethods = {
   },
 
   async _loadForumBoardStats() {
-    for (const board of this._forumBoards) {
+    await Promise.all(this._forumBoards.map(async board => {
       try {
         const snap = await this.db.collection('forum_threads').where('boardId', '==', board.id).get();
         let postTotal = 0;
@@ -97,11 +97,11 @@ export const forumMethods = {
               <span class="forum-last-time">${this.timeAgo(new Date(latestTime))}</span>
             `;
           } else {
-            lastEl.innerHTML = `<span style="color:var(--text-muted);font-size:0.8rem;">no posts yet</span>`;
+            lastEl.innerHTML = `<span class="forum-status-text">no posts yet</span>`;
           }
         }
       } catch { /* non-fatal */ }
-    }
+    }));
   },
 
   showForumBoard(boardId) {
@@ -138,7 +138,6 @@ export const forumMethods = {
 
       const threads = [];
       snap.forEach(d => threads.push({ id: d.id, ...d.data() }));
-      // Pinned threads first, then by lastPostAt
       threads.sort((a, b) => (b.isPinned - a.isPinned) || (b.lastPostAt?.seconds || 0) - (a.lastPostAt?.seconds || 0));
 
       if (snap.empty) {
@@ -209,21 +208,30 @@ export const forumMethods = {
         <button class="btn btn-sm" id="forum-compose-back"><i class="fas fa-arrow-left"></i> ${this.escapeHtml(boardName || 'Board')}</button>
         <span class="forum-breadcrumb">// New Thread</span>
       </div>
-      <div class="panel forum-compose-panel">
-        <div class="panel-header"><i class="fas fa-edit"></i> // NEW THREAD — ${this.escapeHtml(boardName || '')}</div>
-        <div class="forum-compose-body">
-          <div class="form-group">
-            <label class="form-label">SUBJECT:</label>
-            <input class="input" id="forum-new-title" maxlength="120" placeholder="Thread title..." autofocus>
+      <div class="panel feed-composer forum-compose-panel">
+        <div class="feed-composer-prompt">
+          <span class="feed-composer-addr">root@urbindex:~/forum/${this.escapeHtml(boardId || '')}$</span>
+          <span class="feed-composer-blink">_</span>
+          <span class="feed-composer-hint">ctrl+enter to post</span>
+        </div>
+        <div class="forum-compose-title-row">
+          <span class="forum-compose-title-label">SUBJECT:</span>
+          <input class="forum-compose-title-input" id="forum-new-title" maxlength="120" placeholder="Thread subject..." autofocus>
+        </div>
+        <div class="feed-composer-input-wrap">
+          <span class="feed-composer-gt">&gt;</span>
+          <textarea class="feed-composer-textarea" id="forum-new-body" rows="8" maxlength="10000" placeholder="Thread content..."></textarea>
+        </div>
+        <div class="feed-composer-footer">
+          <div class="feed-composer-charbar-wrap">
+            <div class="feed-composer-charbar">
+              <div class="feed-composer-charfill" id="forum-new-charfill" style="width:0%"></div>
+            </div>
+            <span class="forum-char-count"><span id="forum-new-count">0</span>/10000</span>
           </div>
-          <div class="form-group">
-            <label class="form-label">MESSAGE:</label>
-            <textarea class="textarea" id="forum-new-body" rows="10" maxlength="10000" placeholder="Your post..."></textarea>
-            <div class="forum-char-count"><span id="forum-new-count">0</span>/10000</div>
-          </div>
-          <div style="display:flex;gap:8px;">
-            <button class="btn btn-primary" id="forum-compose-submit"><i class="fas fa-paper-plane"></i> Post Thread</button>
+          <div class="feed-composer-actions">
             <button class="btn" id="forum-compose-cancel">Cancel</button>
+            <button class="btn btn-primary" id="forum-compose-submit"><i class="fas fa-paper-plane"></i> Post Thread</button>
           </div>
         </div>
       </div>
@@ -233,9 +241,24 @@ export const forumMethods = {
     document.getElementById('forum-compose-cancel')?.addEventListener('click', () => this.showForumBoard(boardId));
     document.getElementById('forum-compose-submit')?.addEventListener('click', () => this._submitNewThread());
 
-    const bodyEl = document.getElementById('forum-new-body');
+    const bodyEl  = document.getElementById('forum-new-body');
     const countEl = document.getElementById('forum-new-count');
-    if (bodyEl && countEl) bodyEl.addEventListener('input', () => { countEl.textContent = bodyEl.value.length; });
+    const fillEl  = document.getElementById('forum-new-charfill');
+    if (bodyEl) {
+      bodyEl.addEventListener('input', () => {
+        const len = bodyEl.value.length;
+        if (countEl) countEl.textContent = len;
+        if (fillEl) {
+          const pct = (len / 10000) * 100;
+          fillEl.style.width = `${pct}%`;
+          fillEl.classList.toggle('warn', pct >= 70);
+          fillEl.classList.toggle('danger', pct >= 90);
+        }
+      });
+      bodyEl.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); this._submitNewThread(); }
+      });
+    }
   },
 
   async _submitNewThread() {
@@ -265,7 +288,7 @@ export const forumMethods = {
         transaction.set(threadRef, {
           boardId,
           title:               this.sanitizeInput(title),
-          tags:                [...new Set((title.match(/#\w+/g) || []).map(t => t.toLowerCase()))], // Case-insensitive, unique tags
+          tags:                [...new Set((title.match(/#\w+/g) || []).map(t => t.toLowerCase()))],
           isPinned:            false,
           authorId:            this.currentUser.uid,
           authorName:          this.sanitizeInput(authorName),
@@ -274,8 +297,6 @@ export const forumMethods = {
           lastPostAt:          now,
           lastPostAuthorName:  this.sanitizeInput(authorName),
         });
-      // ... rest of transaction
-
         const postRef = this.db.collection('forum_posts').doc();
         transaction.set(postRef, {
           threadId:   newThreadId,
@@ -290,6 +311,7 @@ export const forumMethods = {
       });
 
       this.showToast('Thread posted!', 'success');
+      this.updateUserXP(this.currentUser.uid, 'post_forum');
       this._forumCtx.threadId    = newThreadId;
       this._forumCtx.threadTitle = title;
       this.showForumThread(newThreadId);
@@ -313,18 +335,30 @@ export const forumMethods = {
       </div>
       <div id="forum-posts-container"><div class="loading">Loading posts...</div></div>
       ${canPost ? `
-        <div class="panel forum-compose-panel" id="forum-reply-box">
-          <div class="panel-header"><i class="fas fa-reply"></i> // POST REPLY</div>
-          <div class="forum-compose-body">
-            <textarea class="textarea" id="forum-reply-body" rows="5" maxlength="10000" placeholder="Your reply..."></textarea>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+        <div class="panel feed-composer forum-compose-panel" id="forum-reply-box">
+          <div class="feed-composer-prompt">
+            <span class="feed-composer-addr">root@urbindex:~/forum/thread$</span>
+            <span class="feed-composer-blink">_</span>
+            <span class="feed-composer-hint">ctrl+enter to reply</span>
+          </div>
+          <div class="feed-composer-input-wrap">
+            <span class="feed-composer-gt">&gt;</span>
+            <textarea class="feed-composer-textarea" id="forum-reply-body" rows="4" maxlength="10000" placeholder="Your reply..."></textarea>
+          </div>
+          <div class="feed-composer-footer">
+            <div class="feed-composer-charbar-wrap">
+              <div class="feed-composer-charbar">
+                <div class="feed-composer-charfill" id="forum-reply-charfill" style="width:0%"></div>
+              </div>
               <span class="forum-char-count"><span id="forum-reply-count">0</span>/10000</span>
+            </div>
+            <div class="feed-composer-actions">
               <button class="btn btn-primary" id="forum-reply-submit"><i class="fas fa-paper-plane"></i> Post Reply</button>
             </div>
           </div>
         </div>
       ` : `
-        <div class="panel" style="padding:16px;text-align:center;">
+        <div class="panel forum-signin-panel">
           <button class="btn btn-primary" onclick="app.handleAuth()"><i class="fas fa-terminal"></i> Sign In to Reply</button>
         </div>
       `}
@@ -333,9 +367,24 @@ export const forumMethods = {
     document.getElementById('forum-thread-back')?.addEventListener('click', () => this.showForumBoard(boardId));
     document.getElementById('forum-reply-submit')?.addEventListener('click', () => this._submitForumReply(threadId));
 
-    const replyEl  = document.getElementById('forum-reply-body');
-    const replyCnt = document.getElementById('forum-reply-count');
-    if (replyEl && replyCnt) replyEl.addEventListener('input', () => { replyCnt.textContent = replyEl.value.length; });
+    const replyEl   = document.getElementById('forum-reply-body');
+    const replyCnt  = document.getElementById('forum-reply-count');
+    const replyFill = document.getElementById('forum-reply-charfill');
+    if (replyEl) {
+      replyEl.addEventListener('input', () => {
+        const len = replyEl.value.length;
+        if (replyCnt) replyCnt.textContent = len;
+        if (replyFill) {
+          const pct = (len / 10000) * 100;
+          replyFill.style.width = `${pct}%`;
+          replyFill.classList.toggle('warn', pct >= 70);
+          replyFill.classList.toggle('danger', pct >= 90);
+        }
+      });
+      replyEl.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); this._submitForumReply(threadId); }
+      });
+    }
 
     this._loadForumPosts(threadId);
   },
@@ -435,6 +484,7 @@ export const forumMethods = {
       const cntEl = document.getElementById('forum-reply-count');
       if (cntEl) cntEl.textContent = '0';
       this.showToast('Reply posted!', 'success');
+      this.updateUserXP(this.currentUser.uid, 'post_forum');
       this.announceToScreenReader('Reply posted successfully', 'polite');
       this._loadForumPosts(threadId);
     } catch (e) {
@@ -444,18 +494,24 @@ export const forumMethods = {
     }
   },
 
-  async _deleteForumPost(postId, threadId) {
-    if (!this.currentUser) return;
-    if (!confirm('Delete this post?')) return;
-    try {
-      await this.db.collection('forum_posts').doc(postId).delete();
-      await this.db.collection('forum_threads').doc(threadId).update({
-        postCount: firebase.firestore.FieldValue.increment(-1),
-      });
-      this.showToast('Post deleted', 'success');
-      this._loadForumPosts(threadId);
-    } catch {
-      this.showToast('Failed to delete post', 'error');
+  _deleteForumPost(postId, threadId) {
+    const btn = document.querySelector(`[data-pid="${postId}"]`);
+    if (!btn) return;
+    if (btn.dataset.confirming) {
+      btn.dataset.confirming = '';
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      btn.disabled = true;
+      this.db.collection('forum_posts').doc(postId).delete()
+        .then(() => this.db.collection('forum_threads').doc(threadId).update({ postCount: firebase.firestore.FieldValue.increment(-1) }))
+        .then(() => { this.showToast('Post deleted', 'success'); this._loadForumPosts(threadId); })
+        .catch(() => { this.showToast('Failed to delete post', 'error'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete'; });
+    } else {
+      btn.dataset.confirming = '1';
+      btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Confirm?';
+      btn.classList.add('btn-danger');
+      setTimeout(() => {
+        if (btn.dataset.confirming) { btn.dataset.confirming = ''; btn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete'; btn.classList.remove('btn-danger'); }
+      }, 3000);
     }
   },
 };

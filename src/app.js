@@ -11,6 +11,7 @@ import { settingsMethods } from './modules/settings.js';
 import { forumMethods } from './modules/forum.js';
 import { gamificationMethods } from './modules/gamification.js';
 import { messageMethods } from './modules/messaging.js';
+import { searchMethods } from './modules/search.js';
 
 class UrbindexApp {
   constructor() {
@@ -37,17 +38,19 @@ class UrbindexApp {
     this.attemptWindow = 15 * 60 * 1000;
     this.unsubLocations = null;
     this.unsubActivity = null;
+    this._photos = [];
   }
 
   async init() {
     try {
-      await this.initFirebase();
-      this.initMap();
+      const mapReady = this.initMap();
       this.initUI();
-      this.initAuth();
       this.initTagSystem();
-      this.initSessionManagement();
       this.initRateLimiting();
+      this.initGlobalSearch();
+      await this.initFirebase();
+      this.initAuth();
+      await mapReady;
       this.loadData();
 
       const logoTag = document.querySelector('.logo-tag');
@@ -55,12 +58,12 @@ class UrbindexApp {
 
       setTimeout(() => {
         const ls = document.getElementById('loading-screen');
-        if (ls) { ls.style.opacity = '0'; ls.style.pointerEvents = 'none'; setTimeout(() => ls.classList.add('hidden'), 500); }
+        if (ls) { ls.classList.add('loading-fade'); setTimeout(() => ls.classList.add('hidden'), 500); }
       }, 1500);
     } catch (err) {
       this.showError(`Failed to initialize app: ${err.message}`);
       const ls = document.getElementById('loading-screen');
-      if (ls) { ls.style.opacity = '0'; ls.style.pointerEvents = 'none'; setTimeout(() => ls.classList.add('hidden'), 500); }
+      if (ls) { ls.classList.add('loading-fade'); setTimeout(() => ls.classList.add('hidden'), 500); }
     }
   }
 }
@@ -78,7 +81,8 @@ Object.assign(UrbindexApp.prototype,
   settingsMethods,
   forumMethods,
   gamificationMethods,
-  messageMethods
+  messageMethods,
+  searchMethods
 );
 
 export { UrbindexApp };

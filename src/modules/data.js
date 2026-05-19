@@ -60,42 +60,47 @@ export const dataMethods = {
     const name = this.escapeHtml(data.name || 'Unnamed');
     const cat = this.escapeHtml(data.category || 'unknown');
     const risk = this.escapeHtml(data.riskLevel || 'unknown');
-    const riskColor = this.getRiskColor(data.riskLevel);
     return `<div class="ub-tip">
       <div class="ub-tip-name">${name}</div>
-      <div class="ub-tip-meta">// ${cat} &nbsp;<span style="color:${riskColor};">${risk}</span></div>
+      <div class="ub-tip-meta">// ${cat} &nbsp;<span class="risk risk-${data.riskLevel || 'unknown'}">${risk}</span></div>
       <div class="ub-tip-stats"><i class="fas fa-eye"></i> ${data.visitCount || 0} &nbsp;<i class="fas fa-heart"></i> ${data.likesCount || 0}</div>
     </div>`;
   },
 
   createLocationPopup(data, docId) {
-    const riskColor = this.getRiskColor(data.riskLevel);
     const name = this.escapeHtml(data.name || 'Unnamed Location');
     const desc = this.escapeHtml((data.description || 'No description').substring(0, 120));
     const cat = this.escapeHtml(data.category || 'other');
     const date = data.createdAt ? new Date(data.createdAt.toDate?.() ?? data.createdAt).toLocaleDateString() : 'Unknown';
-    const photos = data.photos?.length ? `<div style="margin:8px 0;display:flex;gap:4px;flex-wrap:wrap;">${data.photos.slice(0,3).map((p,i) => `<img src="${this.escapeHtml(p)}" alt="photo" style="width:64px;height:64px;object-fit:cover;border:1px solid var(--border);" onclick="app.showLocationPhotoModal('${docId}',${i})">`).join('')}</div>` : '';
-    const tags = data.tags?.length ? `<div style="margin:4px 0;">${data.tags.slice(0,4).map(t => `<span style="background:var(--yellow);color:#000;padding:1px 5px;font-size:0.7rem;margin-right:3px;">${this.escapeHtml(t)}</span>`).join('')}</div>` : '';
+    const photos = data.photos?.length
+      ? `<div class="popup-photos">${data.photos.slice(0,3).map((p,i) => `<img src="${this.escapeHtml(p)}" alt="photo" class="popup-photo" onclick="app.showLocationPhotoModal('${docId}',${i})">`).join('')}</div>`
+      : '';
+    const tags = data.tags?.length
+      ? `<div class="popup-tags">${data.tags.slice(0,4).map(t => `<span class="popup-tag">${this.escapeHtml(t)}</span>`).join('')}</div>`
+      : '';
+    const isOwner = this.currentUser?.uid === data.createdBy;
     const actions = this.currentUser
-      ? `<div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap;">
-          <button onclick="app.editLocation('${docId}')" style="font-size:0.75rem;padding:3px 7px;">Edit</button>
-          <button onclick="app.deleteLocation('${docId}')" style="font-size:0.75rem;padding:3px 7px;background:var(--red-alert);color:#000;">Delete</button>
-          <button onclick="app.checkInLocation('${docId}')" style="font-size:0.75rem;padding:3px 7px;background:var(--green-term);color:#000;">Check In</button>
+      ? `<div class="map-popup-actions">
+          ${isOwner
+            ? `<button class="btn btn-sm" onclick="app.editLocation('${docId}')">Edit</button>
+               <button class="btn btn-sm btn-danger" onclick="app.deleteLocation('${docId}',this)">Delete</button>`
+            : ''}
+          <button class="btn btn-sm btn-success" onclick="app.checkInLocation('${docId}')">Check In</button>
         </div>`
-      : `<button onclick="app.showView('locations')" style="font-size:0.8rem;padding:3px 7px;background:var(--yellow);color:#000;margin-top:8px;">View All</button>`;
+      : `<div class="map-popup-actions"><button class="btn btn-sm btn-primary" onclick="app.showView('locations')">View All</button></div>`;
     return `
-      <div style="min-width:220px;max-width:360px;font-family:var(--font-mono);">
-        <div style="margin-bottom:6px;"><strong style="color:var(--yellow);">${name}</strong></div>
-        <div style="margin-bottom:6px;font-size:0.9rem;color:#aaa;">${desc}</div>
-        <div style="display:flex;gap:6px;font-size:0.8rem;margin-bottom:6px;">
-          <span style="background:var(--black-raised);padding:2px 5px;">${cat}</span>
-          <span style="background:${riskColor};color:#000;padding:2px 5px;">${data.riskLevel || 'unknown'}</span>
+      <div class="map-popup">
+        <div class="map-popup-title">${name}</div>
+        <div class="map-popup-desc">${desc}</div>
+        <div class="map-popup-meta">
+          <span class="popup-cat-chip">${cat}</span>
+          <span class="risk risk-${data.riskLevel || 'unknown'}">${data.riskLevel || 'unknown'}</span>
         </div>
         ${photos}${tags}
-        <div style="font-size:0.75rem;color:#666;margin:6px 0;padding-top:4px;border-top:1px solid var(--border);">
-          <i class="fas fa-calendar"></i> ${date}
-          <i class="fas fa-eye" style="margin-left:8px;"></i> ${data.visitCount || 0}
-          <i class="fas fa-heart" style="margin-left:8px;"></i> ${data.likesCount || 0}
+        <div class="popup-stats">
+          <span><i class="fas fa-calendar"></i> ${date}</span>
+          <span><i class="fas fa-eye"></i> ${data.visitCount || 0}</span>
+          <span><i class="fas fa-heart"></i> ${data.likesCount || 0}</span>
         </div>
         ${actions}
       </div>`;
@@ -122,7 +127,7 @@ export const dataMethods = {
     this.unsubActivity = this.db.collection('locations').where('status', '==', 'active').orderBy('createdAt', 'desc').limit(10).onSnapshot(snap => {
       const feed = document.getElementById('activity-feed');
       if (!feed) return;
-      if (snap.empty) { feed.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:16px;">No recent activity</div>'; return; }
+      if (snap.empty) { feed.innerHTML = '<div class="empty-state">No recent activity</div>'; return; }
       feed.innerHTML = '';
       snap.forEach(doc => {
         const data = doc.data();
@@ -131,7 +136,7 @@ export const dataMethods = {
         item.innerHTML = `
           <div class="activity-icon"><i class="fas fa-map-marker-alt"></i></div>
           <div class="activity-content">
-            <div><span class="activity-user">// explorer</span> tagged <strong>${this.escapeHtml(data.name)}</strong></div>
+            <div><span class="activity-user">// ${this.escapeHtml(data.createdByName || 'explorer')}</span> tagged <strong>${this.escapeHtml(data.name)}</strong></div>
             <div class="activity-time">${this.timeAgo(data.createdAt?.toDate?.())}</div>
           </div>`;
         feed.appendChild(item);
@@ -186,10 +191,9 @@ export const dataMethods = {
     const view = document.getElementById('notifications-view-content');
     if (!view) return;
     view.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <div class="view-header">
         <h2>// NOTIFICATIONS</h2>
-        <div style="display:flex;gap:12px;">
-          <button class="btn" onclick="app.showView('map')"><i class="fas fa-map"></i> Back</button>
+        <div class="flex gap-8">
           <button class="btn" onclick="app.markAllNotificationsAsRead()"><i class="fas fa-check-double"></i> Mark All Read</button>
         </div>
       </div>
@@ -200,21 +204,21 @@ export const dataMethods = {
   async loadNotifications() {
     const container = document.getElementById('notifications-content');
     if (!container) return;
-    if (!this.currentUser) { container.innerHTML = '<div style="color:var(--text-muted);">Sign in to view notifications</div>'; return; }
+    if (!this.currentUser) { container.innerHTML = '<div class="text-muted">Sign in to view notifications</div>'; return; }
     try {
       const snap = await this.db.collection('user_notifications').where('userId', '==', this.currentUser.uid).orderBy('createdAt', 'desc').limit(30).get();
-      if (snap.empty) { container.innerHTML = '<div style="color:var(--text-muted);padding:24px;text-align:center;">[ NO NOTIFICATIONS ]</div>'; return; }
+      if (snap.empty) { container.innerHTML = '<div class="empty-state">[ NO NOTIFICATIONS ]</div>'; return; }
       container.innerHTML = '';
       snap.forEach(doc => {
         const d = doc.data();
         const el = document.createElement('div');
         el.className = `notification-item${d.read ? '' : ' unread'}`;
         el.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
+          <div class="notification-row">
             <span>${this.escapeHtml(d.message)}</span>
-            <button class="btn" style="font-size:0.75rem;padding:2px 6px;" onclick="app.markNotificationAsRead('${doc.id}')">✓</button>
+            ${!d.read ? `<button class="btn notification-mark-btn" onclick="app.markNotificationAsRead('${doc.id}')"><i class="fas fa-check"></i></button>` : ''}
           </div>
-          <div style="color:var(--text-muted);font-size:0.8rem;">${this.timeAgo(d.createdAt?.toDate?.())}</div>`;
+          <div class="notification-time">${this.timeAgo(d.createdAt?.toDate?.())}</div>`;
         container.appendChild(el);
       });
     } catch { container.innerHTML = '<div class="error">Failed to load notifications</div>'; }
@@ -243,15 +247,19 @@ export const dataMethods = {
       const snap = await this.db.collection('user_notifications').where('userId', '==', this.currentUser.uid).where('read', '==', false).get();
       this.unreadNotifications = snap.size;
       const badge = document.getElementById('notification-badge');
-      if (badge) { badge.textContent = snap.size; badge.style.display = snap.size > 0 ? 'block' : 'none'; }
+      if (badge) { badge.textContent = snap.size; badge.classList.toggle('hidden', snap.size === 0); }
     } catch {}
   },
 
   showRoutes() {
     const view = document.getElementById('routes-view-content');
     if (!view) return;
-    view.innerHTML = `<h2>// ROUTES</h2><div id="routes-list" class="loading">Loading routes...</div>
-      ${this.currentUser ? `<button class="btn btn-primary" style="margin-top:16px;" onclick="app.createNewRoute()"><i class="fas fa-plus"></i> Plan Route</button>` : ''}`;
+    view.innerHTML = `
+      <div class="view-header">
+        <h2>// ROUTES</h2>
+        ${this.currentUser ? `<button class="btn btn-primary" onclick="app.createNewRoute()"><i class="fas fa-plus"></i> Plan Route</button>` : ''}
+      </div>
+      <div id="routes-list" class="loading">Loading routes...</div>`;
     this.loadRoutes();
   },
 
@@ -260,23 +268,59 @@ export const dataMethods = {
     if (!container) return;
     try {
       const snap = await this.db.collection('routes').orderBy('createdAt', 'desc').limit(20).get();
-      if (snap.empty) { container.innerHTML = '<div style="color:var(--text-muted);padding:24px;">No routes yet. Plan one!</div>'; return; }
+      if (snap.empty) { container.innerHTML = '<div class="empty-state"><i class="fas fa-route"></i><p>No routes yet — plan the first one.</p></div>'; return; }
       container.innerHTML = '';
       snap.forEach(doc => {
         const d = doc.data();
+        const stops = d.locations?.length || 0;
+        const ts = d.createdAt?.toDate ? this.timeAgo(d.createdAt.toDate()) : '';
         const el = document.createElement('div');
-        el.className = 'panel'; el.style.marginBottom = '12px';
-        el.innerHTML = `<h4>${this.escapeHtml(d.name || 'Unnamed Route')}</h4><p style="color:var(--text-muted);">${this.escapeHtml(d.description || '')}</p><div style="color:var(--text-muted);font-size:0.85rem;">${d.locations?.length || 0} stops</div>`;
+        el.className = 'panel route-card';
+        el.innerHTML = `
+          <div class="route-card-info">
+            <h4>${this.escapeHtml(d.name || 'Unnamed Route')}</h4>
+            ${d.description ? `<p class="route-card-desc">${this.escapeHtml(d.description)}</p>` : ''}
+            <div class="route-card-meta">
+              <span><i class="fas fa-map-marker-alt"></i> ${stops} stop${stops !== 1 ? 's' : ''}</span>
+              ${ts ? `<span><i class="fas fa-clock"></i> ${ts}</span>` : ''}
+            </div>
+          </div>
+          <div class="route-card-actions">
+            <button class="btn btn-sm btn-primary" onclick="app.viewRouteOnMap('${doc.id}')"><i class="fas fa-map"></i> Map</button>
+          </div>`;
         container.appendChild(el);
       });
     } catch { container.innerHTML = '<div class="error">Failed to load routes</div>'; }
   },
 
+  async viewRouteOnMap(routeId) {
+    try {
+      const doc = await this.db.collection('routes').doc(routeId).get();
+      if (!doc.exists) { this.showToast('Route not found', 'error'); return; }
+      const d = doc.data();
+      const locationIds = d.locations || [];
+      if (!locationIds.length) { this.showToast('No stops in this route yet', 'info'); return; }
+
+      this.showView('map');
+      setTimeout(() => {
+        const markers = locationIds.map(id => this.markers?.get(id)).filter(Boolean);
+        if (!markers.length) { this.showToast('Route locations not found on current map', 'warning'); return; }
+        const group = L.featureGroup(markers);
+        this.map.fitBounds(group.getBounds().pad(0.25));
+        this.showToast(`Viewing: ${d.name}`, 'success');
+      }, 250);
+    } catch { this.showToast('Failed to load route', 'error'); }
+  },
+
   showGroups() {
     const view = document.getElementById('groups-view-content');
     if (!view) return;
-    view.innerHTML = `<h2>// GROUPS</h2><div id="groups-list" class="loading">Loading groups...</div>
-      ${this.currentUser ? `<button class="btn btn-primary" style="margin-top:16px;" onclick="app.createNewGroup()"><i class="fas fa-plus"></i> Create Group</button>` : ''}`;
+    view.innerHTML = `
+      <div class="view-header">
+        <h2>// GROUPS</h2>
+        ${this.currentUser ? `<button class="btn btn-primary" onclick="app.createNewGroup()"><i class="fas fa-plus"></i> Create Group</button>` : ''}
+      </div>
+      <div id="groups-list" class="loading">Loading groups...</div>`;
     this.loadGroups();
   },
 
@@ -284,47 +328,130 @@ export const dataMethods = {
     const container = document.getElementById('groups-list');
     if (!container) return;
     try {
-      const snap = await this.db.collection('groups').orderBy('createdAt', 'desc').limit(20).get();
-      if (snap.empty) { container.innerHTML = '<div style="color:var(--text-muted);padding:24px;">No groups yet. Create one!</div>'; return; }
+      const [groupSnap, memberSnap] = await Promise.all([
+        this.db.collection('groups').orderBy('createdAt', 'desc').limit(20).get(),
+        this.currentUser
+          ? this.db.collection('group_members').where('userId', '==', this.currentUser.uid).get()
+          : Promise.resolve({ docs: [] }),
+      ]);
+      const memberOf = new Set(memberSnap.docs.map(d => d.data().groupId));
+
+      if (groupSnap.empty) {
+        container.innerHTML = `<div class="empty-state"><i class="fas fa-users"></i><p>No groups yet — create the first one.</p></div>`;
+        return;
+      }
       container.innerHTML = '';
-      snap.forEach(doc => {
+      groupSnap.forEach(doc => {
         const d = doc.data();
-        const el = document.createElement('div'); el.className = 'panel'; el.style.marginBottom = '12px';
-        el.innerHTML = `<h4>${this.escapeHtml(d.name || 'Unnamed Group')}</h4><p style="color:var(--text-muted);">${this.escapeHtml(d.description || '')}</p><div style="color:var(--text-muted);font-size:0.85rem;">${d.memberCount || 0} members</div>`;
+        const joined = memberOf.has(doc.id);
+        const el = document.createElement('div');
+        el.className = 'panel group-card';
+        el.innerHTML = `
+          <div class="group-card-info">
+            <div class="group-card-header">
+              <h4>${this.escapeHtml(d.name || 'Unnamed Group')}</h4>
+              ${joined ? '<span class="chip live">JOINED</span>' : ''}
+            </div>
+            ${d.description ? `<p class="group-card-desc">${this.escapeHtml(d.description)}</p>` : ''}
+            <div class="group-card-meta">
+              <span><i class="fas fa-users"></i> ${d.memberCount || 0} members</span>
+            </div>
+          </div>
+          ${this.currentUser ? `
+            <div class="group-card-actions">
+              <button class="btn btn-sm ${joined ? 'btn-danger' : 'btn-primary'}" id="group-btn-${doc.id}" onclick="app.joinGroup('${doc.id}')">
+                <i class="fas fa-${joined ? 'sign-out-alt' : 'sign-in-alt'}"></i> ${joined ? 'Leave' : 'Join'}
+              </button>
+            </div>` : ''}`;
         container.appendChild(el);
       });
     } catch { container.innerHTML = '<div class="error">Failed to load groups</div>'; }
   },
 
-  async createNewRoute() {
-    if (!this.currentUser) { this.showToast('Sign in to create routes', 'warning'); this.handleAuth(); return; }
-    const name = prompt('Route name:');
-    if (!name?.trim()) return;
-    const desc = prompt('Description (optional):') || '';
+  async joinGroup(groupId) {
+    if (!this.currentUser) { this.showToast('Sign in to join groups', 'warning'); this.handleAuth(); return; }
+    const opKey = `join-group-${groupId}`;
+    if (this.activeOperations.has(opKey)) return;
+    this.activeOperations.add(opKey);
     try {
-      await this.db.collection('routes').add({ name: this.sanitizeInput(name.trim()), description: this.sanitizeInput(desc.trim()), createdBy: this.currentUser.uid, locations: [], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-      this.showToast('Route created!', 'success'); this.loadRoutes();
-    } catch { this.showToast('Failed to create route', 'error'); }
+      const memberRef = this.db.collection('group_members').doc(`${groupId}_${this.currentUser.uid}`);
+      const snap = await memberRef.get();
+      if (snap.exists) {
+        await memberRef.delete();
+        await this.db.collection('groups').doc(groupId).update({ memberCount: firebase.firestore.FieldValue.increment(-1) });
+        this.showToast('Left group', 'info');
+      } else {
+        await memberRef.set({ groupId, userId: this.currentUser.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        await this.db.collection('groups').doc(groupId).update({ memberCount: firebase.firestore.FieldValue.increment(1) });
+        this.showToast('Joined group!', 'success');
+      }
+      this.loadGroups();
+    } catch { this.showToast('Failed to update group membership', 'error'); }
+    finally { this.activeOperations.delete(opKey); }
   },
 
-  async createNewGroup() {
+  createNewRoute() {
+    if (!this.currentUser) { this.showToast('Sign in to create routes', 'warning'); this.handleAuth(); return; }
+    this._showQuickCreateModal('Route', 'route name', 'Create Route', async (name, desc) => {
+      await this.db.collection('routes').add({ name, description: desc, createdBy: this.currentUser.uid, locations: [], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      this.showToast('Route created!', 'success'); this.loadRoutes?.();
+    });
+  },
+
+  createNewGroup() {
     if (!this.currentUser) { this.showToast('Sign in to create groups', 'warning'); this.handleAuth(); return; }
-    const name = prompt('Group name:');
-    if (!name?.trim()) return;
-    const desc = prompt('Description (optional):') || '';
-    try {
-      await this.db.collection('groups').add({ name: this.sanitizeInput(name.trim()), description: this.sanitizeInput(desc.trim()), createdBy: this.currentUser.uid, memberCount: 1, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    this._showQuickCreateModal('Group', 'group name', 'Create Group', async (name, desc) => {
+      await this.db.collection('groups').add({ name, description: desc, createdBy: this.currentUser.uid, memberCount: 1, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
       this.showToast('Group created!', 'success'); this.loadGroups();
-    } catch { this.showToast('Failed to create group', 'error'); }
+    });
+  },
+
+  _showQuickCreateModal(type, namePlaceholder, submitLabel, onSubmit) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active';
+    overlay.innerHTML = `
+      <div class="modal">
+        <div class="modal-header">
+          <span>// ${this.escapeHtml(submitLabel.toUpperCase())}</span>
+          <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="_quick-create-form">
+            <div class="form-group">
+              <label class="form-label">Name</label>
+              <input class="input" id="_qc-name" type="text" placeholder="${this.escapeHtml(namePlaceholder)}" required maxlength="80" autofocus>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <textarea class="textarea" id="_qc-desc" placeholder="Optional description..." maxlength="300" rows="2"></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+              <button type="submit" class="btn btn-primary">${this.escapeHtml(submitLabel)}</button>
+            </div>
+          </form>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelector('#_quick-create-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = this.sanitizeInput(overlay.querySelector('#_qc-name').value.trim());
+      const desc = this.sanitizeInput(overlay.querySelector('#_qc-desc').value.trim());
+      if (!name) return;
+      const btn = e.target.querySelector('[type="submit"]');
+      btn.disabled = true; btn.textContent = 'Saving...';
+      try { await onSubmit(name, desc); overlay.remove(); }
+      catch { this.showToast(`Failed to create ${type.toLowerCase()}`, 'error'); btn.disabled = false; btn.textContent = submitLabel; }
+    });
   },
 
   showMissions() {
     const view = document.getElementById('missions-view-content');
     if (!view) return;
     view.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <div class="view-header">
         <h2>// MISSIONS</h2>
-        <button class="btn" onclick="app.showView('map')"><i class="fas fa-map"></i> Back</button>
       </div>
       <div id="missions-list" class="loading">Loading missions...</div>`;
     this.loadMissions();
@@ -333,34 +460,49 @@ export const dataMethods = {
   async loadMissions() {
     const container = document.getElementById('missions-list');
     if (!container) return;
-    if (!this.currentUser) { container.innerHTML = '<div style="color:var(--text-muted);padding:24px;">Sign in to view missions</div>'; return; }
-    const samples = this.getSampleMissions();
-    container.innerHTML = '';
-    samples.forEach(m => {
-      const el = document.createElement('div'); el.className = 'panel'; el.style.marginBottom = '12px';
-      el.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:start;">
-          <div><h4>${this.escapeHtml(m.title)}</h4><p style="color:var(--text-muted);">${this.escapeHtml(m.description)}</p></div>
-          <span style="background:var(--yellow);color:#000;padding:2px 8px;font-size:0.8rem;white-space:nowrap;">+${m.xp} XP</span>
-        </div>
-        <button class="btn btn-primary" style="margin-top:8px;" onclick="app.startMission('${m.id}')"><i class="fas fa-play"></i> Start</button>`;
-      container.appendChild(el);
-    });
-  },
+    if (!this.currentUser) { container.innerHTML = '<div class="empty-state">Sign in to view missions</div>'; return; }
+    container.innerHTML = '<div class="loading">Querying mission status...</div>';
+    try {
+      const uid = this.currentUser.uid;
+      const [locsSnap, followSnap, visitsSnap] = await Promise.all([
+        this.db.collection('locations').where('createdBy', '==', uid).where('status', '==', 'active').get(),
+        this.db.collection('user_followers').where('followerId', '==', uid).get(),
+        this.db.collection('location_visits').where('userId', '==', uid).get(),
+      ]);
+      const locCount = locsSnap.size;
+      const locWithDesc = locsSnap.docs.filter(d => (d.data().description || '').length >= 30).length;
+      const followCount = followSnap.size;
+      const visitCount = visitsSnap.size;
 
-  getSampleMissions() {
-    return [
-      { id: 'm1', title: 'First Scout', description: 'Add your first location to the network.', xp: 50 },
-      { id: 'm2', title: 'Social Operator', description: 'Follow 3 other explorers.', xp: 30 },
-      { id: 'm3', title: 'Intel Gatherer', description: 'Add detailed notes to 5 locations.', xp: 100 },
-      { id: 'm4', title: 'Grid Walker', description: 'Check in at 10 different locations.', xp: 150 },
-      { id: 'm5', title: 'Zone Mapper', description: 'Add 5 locations in the same city.', xp: 200 },
-    ];
-  },
+      const missions = [
+        { id: 'm1', title: 'First Scout', description: 'Add your first location to the network.', xp: 50, progress: Math.min(locCount, 1), goal: 1 },
+        { id: 'm2', title: 'Social Operator', description: 'Follow 3 other explorers.', xp: 30, progress: Math.min(followCount, 3), goal: 3 },
+        { id: 'm3', title: 'Intel Gatherer', description: 'Add detailed descriptions to 5 locations.', xp: 100, progress: Math.min(locWithDesc, 5), goal: 5 },
+        { id: 'm4', title: 'Grid Walker', description: 'Check in at 10 different locations.', xp: 150, progress: Math.min(visitCount, 10), goal: 10 },
+        { id: 'm5', title: 'Zone Mapper', description: 'Add 5 locations to the network.', xp: 200, progress: Math.min(locCount, 5), goal: 5 },
+      ];
 
-  async startMission(missionId) {
-    if (!this.currentUser) { this.showToast('Sign in to start missions', 'warning'); this.handleAuth(); return; }
-    this.showToast(`Mission started!`, 'success');
+      container.innerHTML = '';
+      missions.forEach(m => {
+        const pct = Math.round((m.progress / m.goal) * 100);
+        const done = m.progress >= m.goal;
+        const el = document.createElement('div');
+        el.className = 'panel mission-card';
+        el.innerHTML = `
+          <div class="panel-header${done ? ' mission-done' : ''}">${done ? '<i class="fas fa-check-double"></i> ' : ''}${this.escapeHtml(m.title)} <span class="float-right">+${m.xp} XP</span></div>
+          <div class="panel-body">
+            <p class="mission-desc">${this.escapeHtml(m.description)}</p>
+            <div class="mission-progress-track">
+              <div class="mission-progress-fill${done ? ' done' : ''}" style="width:${pct}%;"></div>
+            </div>
+            <div class="mission-progress-labels">
+              <span>${m.progress}/${m.goal} complete</span>
+              <span>${pct}%</span>
+            </div>
+          </div>`;
+        container.appendChild(el);
+      });
+    } catch { container.innerHTML = '<div class="error">Failed to load missions</div>'; }
   },
 
   showLocationPhotos(locationId) {
@@ -377,39 +519,46 @@ export const dataMethods = {
       if (!doc.exists) return;
       const d = doc.data();
       if (!d.photos?.[idx]) return;
-      this.showPhotoModal(d.photos, d.name || 'Location Photos', idx);
+      this.showPhotoModal(d.photos, d.name || 'Location Photos');
     }).catch(() => this.showToast('Failed to load photo', 'error'));
   },
 
-  showPhotoModal(photos, title = 'Photos', start = 0) {
-    const modal = document.createElement('div');
-    modal.className = 'modal location-detail-modal'; modal.style.display = 'flex';
-    modal.innerHTML = `
-      <div class="modal-content" style="max-width:90vw;max-height:90vh;width:auto;">
-        <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
-        <h3 style="margin-bottom:8px;">${this.escapeHtml(title)}</h3>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-height:70vh;overflow-y:auto;">
-          ${photos.map((p, i) => `<img src="${this.escapeHtml(p)}" alt="Photo ${i+1}" style="max-width:200px;max-height:200px;object-fit:cover;border:1px solid var(--border);cursor:pointer;" onclick="window.currentPhotoIndex=${i};window.currentPhotos=${JSON.stringify(photos)};app.showFullScreenPhoto()">`).join('')}
+  showPhotoModal(photos, title = 'Photos') {
+    this._photos = photos;
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active location-detail-modal';
+    overlay.innerHTML = `
+      <div class="modal modal-wide">
+        <div class="modal-header">
+          <span>${this.escapeHtml(title)}</span>
+          <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="photo-grid">
+            ${photos.map((p, i) => `<img src="${this.escapeHtml(p)}" alt="Photo ${i+1}" class="photo-grid-item" onclick="app.showFullScreenPhoto(${i})">`).join('')}
+          </div>
         </div>
       </div>`;
-    document.body.appendChild(modal);
-    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   },
 
-  showFullScreenPhoto() {
-    const photos = window.currentPhotos; const idx = window.currentPhotoIndex;
+  showFullScreenPhoto(idx) {
+    const photos = this._photos;
     if (!photos || idx === undefined) return;
-    const modal = document.createElement('div');
-    modal.className = 'modal'; modal.style.display = 'flex';
-    modal.innerHTML = `
-      <div style="position:relative;max-width:95vw;max-height:95vh;">
-        <img src="${this.escapeHtml(photos[idx])}" alt="Photo" style="max-width:100%;max-height:100%;object-fit:contain;border:3px solid var(--yellow);">
-        <button class="modal-close" onclick="this.closest('.modal').remove()" style="top:8px;right:8px;">&times;</button>
-        ${photos.length > 1 ? `<button onclick="window.currentPhotoIndex=(${idx}-1+${photos.length})%${photos.length};app.showFullScreenPhoto()" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.7);color:var(--text);border:none;padding:8px 12px;cursor:pointer;"><i class="fas fa-chevron-left"></i></button>
-        <button onclick="window.currentPhotoIndex=(${idx}+1)%${photos.length};app.showFullScreenPhoto()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.7);color:var(--text);border:none;padding:8px 12px;cursor:pointer;"><i class="fas fa-chevron-right"></i></button>` : ''}
+    const n = photos.length;
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active';
+    overlay.innerHTML = `
+      <div class="photo-fullscreen-wrap">
+        <img src="${this.escapeHtml(photos[idx])}" alt="Photo" class="photo-fullscreen-img">
+        <button class="modal-close photo-close-btn" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+        ${n > 1 ? `
+          <button class="photo-nav-btn photo-nav-prev" onclick="this.closest('.modal-overlay').remove();app.showFullScreenPhoto(${(idx - 1 + n) % n})"><i class="fas fa-chevron-left"></i></button>
+          <button class="photo-nav-btn photo-nav-next" onclick="this.closest('.modal-overlay').remove();app.showFullScreenPhoto(${(idx + 1) % n})"><i class="fas fa-chevron-right"></i></button>` : ''}
       </div>`;
-    document.querySelector('.location-detail-modal')?.remove();
-    document.body.appendChild(modal);
-    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    document.querySelector('.photo-fullscreen-wrap')?.closest('.modal-overlay')?.remove();
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   },
 };

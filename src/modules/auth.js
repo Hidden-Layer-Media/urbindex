@@ -9,12 +9,13 @@ export const authMethods = {
       this.loadStats();
       if (user) {
         this.loadUserData();
-        if (!user.isAnonymous) this.initSessionManagement();
+        if (!user.isAnonymous) {
+          this.initSessionManagement();
+          this.initMessaging();
+        }
       } else {
         this.stopSessionManagement();
-        if (window.app && typeof window.app.cleanupMessaging === 'function') {
-          window.app.cleanupMessaging();
-        }
+        this.cleanupMessaging();
       }
     }, error => {
       if (error.code === 'auth/network-request-failed') {
@@ -110,7 +111,7 @@ export const authMethods = {
       await this.auth.signInWithEmailAndPassword(email, passwordEl.value.trim());
       this.hideAuthModal();
       this.showToast('Signed in successfully!', 'success');
-      this.authAttempts.delete(email); // Reset on success
+      this.authAttempts.delete(email);
     } catch (err) {
       this.recordAuthAttempt(email);
       const msgs = {
@@ -147,7 +148,7 @@ export const authMethods = {
       await result.user.sendEmailVerification();
       this.hideAuthModal();
       this.showToast('Account created! Please check your email to verify your account.', 'success');
-      this.authAttempts.delete(email); // Reset on success
+      this.authAttempts.delete(email);
     } catch (err) {
       this.recordAuthAttempt(email);
       const msgs = {
@@ -230,32 +231,28 @@ export const authMethods = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       }, { merge: true });
-    } catch (err) { console.error('Error creating user profile:', err); }
+    } catch {}
   },
 
   updateAuthUI() {
     const btn = document.getElementById('auth-btn');
     const span = btn?.querySelector('span');
     const icon = btn?.querySelector('i');
-    const profileBtn = document.getElementById('profile-btn');
     const dot = document.getElementById('status-dot');
-    const text = document.getElementById('status-text');
 
     if (this.currentUser) {
       if (span) span.textContent = 'Sign Out';
       if (icon) icon.className = 'fas fa-sign-out-alt';
       btn?.setAttribute('title', 'Sign out of your account');
-      if (profileBtn) profileBtn.style.display = '';
       dot?.classList.remove('offline');
-      if (text) text.textContent = 'Connected';
     } else {
       if (span) span.textContent = 'Sign In / Register';
       if (icon) icon.className = 'fas fa-user';
       btn?.setAttribute('title', 'Sign in or create an account');
-      if (profileBtn) profileBtn.style.display = '';
       dot?.classList.add('offline');
-      if (text) text.textContent = 'Guest Mode';
     }
+    // re-sync status text with current network state (don't hardcode here)
+    this.updateOnlineStatus(navigator.onLine);
   },
 
   initFormValidation() {
@@ -328,12 +325,12 @@ export const authMethods = {
 
   showFieldError(input, el, msg) {
     input.classList.add('error'); input.classList.remove('success');
-    if (el) { el.innerHTML = `<i class="fas fa-exclamation-triangle" aria-hidden="true"></i> ${msg}`; el.style.display = 'block'; }
+    if (el) { el.innerHTML = `<i class="fas fa-exclamation-triangle" aria-hidden="true"></i> ${msg}`; el.classList.remove('hidden'); }
   },
 
   showFieldSuccess(input, el, msg) {
     input.classList.add('success'); input.classList.remove('error');
-    if (el) { el.innerHTML = `<i class="fas fa-check-circle" aria-hidden="true"></i> ${msg}`; el.style.display = 'block'; }
+    if (el) { el.innerHTML = `<i class="fas fa-check-circle" aria-hidden="true"></i> ${msg}`; el.classList.remove('hidden'); }
   },
 
   async handlePasswordReset(e) {
@@ -383,15 +380,13 @@ export const authMethods = {
     clearTimeout(this.sessionWarningTimer); this.sessionWarningTimer = null;
     clearInterval(this.sessionCountdownTimer); this.sessionCountdownTimer = null;
     clearInterval(this.sessionRefreshTimer); this.sessionRefreshTimer = null;
-    this.unsubLocations?.(); this.unsubLocations = null;
-    this.unsubActivity?.(); this.unsubActivity = null;
     this.hideSessionWarning();
   },
 
   showSessionWarning() {
     const el = document.getElementById('session-warning');
     const span = document.getElementById('session-countdown');
-    if (el) el.style.display = 'block';
+    if (el) el.classList.remove('hidden');
     let countdown = 300;
     if (span) span.textContent = Math.floor(countdown / 60);
     this.sessionCountdownTimer = setInterval(() => {
@@ -409,7 +404,7 @@ export const authMethods = {
 
   hideSessionWarning() {
     const el = document.getElementById('session-warning');
-    if (el) { el.style.display = 'none'; el.classList.remove('warning'); }
+    if (el) { el.classList.add('hidden'); el.classList.remove('warning'); }
     clearInterval(this.sessionCountdownTimer); this.sessionCountdownTimer = null;
   },
 

@@ -49,11 +49,11 @@ export const utilsMethods = {
     toast.innerHTML = `
       <i class="fas ${icons[type] || icons.info}" aria-hidden="true"></i>
       <span>${this.escapeHtml(message)}</span>
-      <button onclick="this.closest('.toast').remove()" aria-label="Close" style="background:none;border:none;cursor:pointer;color:var(--text-muted);margin-left:auto;font-size:14px;">&times;</button>
+      <button onclick="this.closest('.toast').remove()" aria-label="Close" class="toast-close">&times;</button>
     `;
     container.appendChild(toast);
     this.announceToScreenReader(message, type === 'error' ? 'assertive' : 'polite');
-    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 200); }, duration);
+    setTimeout(() => { toast.classList.add('toast-fade'); setTimeout(() => toast.remove(), 200); }, duration);
   },
 
   announceToScreenReader(message, priority = 'polite') {
@@ -74,11 +74,6 @@ export const utilsMethods = {
     } else {
       if (document.activeElement === last) { first.focus(); event.preventDefault(); }
     }
-  },
-
-  getRiskColor(riskLevel) {
-    const colors = { safe: '#00FF41', low: '#88FF00', medium: '#FFAA00', high: '#FF4400', extreme: '#FF0000' };
-    return colors[riskLevel] || '#888888';
   },
 
   fuzzyMatch(text, query) {

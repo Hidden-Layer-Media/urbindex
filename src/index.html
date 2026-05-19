@@ -26,7 +26,7 @@
 
   <!-- Header -->
   <header class="header" role="banner">
-    <div style="display:flex;align-items:center;gap:12px;">
+    <div class="header-left">
       <div class="logo">URBINDEX</div>
       <span class="logo-tag">// urban exploration network</span>
     </div>
@@ -35,7 +35,7 @@
         <div class="status-dot" id="status-dot"></div>
         <span id="status-text">Connecting...</span>
       </div>
-      <div id="session-warning" class="session-warning" style="display:none;">
+      <div id="session-warning" class="session-warning hidden">
         Session expires in <span id="session-countdown">5</span>m
         <button class="btn btn-sm" onclick="app.refreshSession()">Extend</button>
       </div>
@@ -59,7 +59,7 @@
     <button class="nav-btn" type="button" data-view="groups"><i class="fas fa-layer-group"></i> Groups</button>
     <button class="nav-btn" type="button" data-view="notifications">
       <i class="fas fa-bell"></i> Alerts
-      <span class="nav-badge" id="notification-badge" style="display:none;"></span>
+      <span class="nav-badge hidden" id="notification-badge"></span>
     </button>
     <button class="nav-btn" type="button" data-view="settings"><i class="fas fa-cog"></i> Settings</button>
   </nav>
@@ -68,51 +68,52 @@
   <button class="btn btn-primary fab" id="add-location-fab" aria-label="Add Location">
     <i class="fas fa-plus"></i>
   </button>
-    <i class="fas fa-plus"></i>
-  </button>
 
   <main class="main" id="main-content" role="main">
 
     <!-- MAP VIEW -->
     <div class="view active" id="map-view">
-      <div class="dashboard-hero">
-        <div>
-          <div class="hero-eyebrow"><i class="fas fa-broadcast-tower"></i> Live Ops</div>
-          <div class="hero-title">Field Ops Command</div>
-          <div class="hero-sub">Track the network. Drop finds. Connect with the crew.</div>
-          <div class="quick-actions">
-            <button class="btn btn-primary btn-sm" onclick="app.showAddLocationModal()"><i class="fas fa-plus"></i> Drop Location</button>
-            <button class="btn btn-sm" id="recenter-btn"><i class="fas fa-crosshairs"></i> <span>My Location</span></button>
-            <button class="btn btn-sm" onclick="app.showView('forum')"><i class="fas fa-comments"></i> Forum</button>
-            <button class="btn btn-sm" onclick="app.createNewPost()"><i class="fas fa-bullhorn"></i> Post Intel</button>
+      <div class="cmd-strip">
+        <div class="cmd-id-bar">
+          <span class="cmd-id-title">URBINDEX</span>
+          <span class="cmd-id-sep">::</span>
+          <span class="cmd-id-sub">FIELD OPS</span>
+          <div class="cmd-live-stats">
+            <span class="cmd-live-stat"><span class="cmd-live-val" id="hero-total-locations">0</span><span class="cmd-live-lbl"> locs</span></span>
+            <span class="cmd-live-sep">/</span>
+            <span class="cmd-live-stat"><span class="cmd-live-val" id="hero-active-users">0</span><span class="cmd-live-lbl"> explorers</span></span>
+            <span class="cmd-live-sep">/</span>
+            <span class="cmd-live-stat"><span class="cmd-live-lbl">idx </span><span class="cmd-live-val" id="hero-activity-index">--</span></span>
           </div>
         </div>
-        <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);">
-          <div class="stat-card"><div class="stat-value" id="hero-total-locations">0</div><div class="stat-label">Locations</div></div>
-          <div class="stat-card"><div class="stat-value" id="hero-active-users">0</div><div class="stat-label">Explorers</div></div>
-          <div class="stat-card"><div class="stat-value" id="hero-activity-index">--</div><div class="stat-label">Activity</div></div>
+        <div class="cmd-action-bar">
+          <span class="cmd-prompt">$</span>
+          <button class="btn btn-primary btn-sm" onclick="app.showAddLocationModal()"><i class="fas fa-plus"></i> drop_location</button>
+          <button class="btn btn-sm" id="recenter-btn"><i class="fas fa-crosshairs"></i> <span>my_pos</span></button>
+          <button class="btn btn-sm" onclick="app.showView('forum')"><i class="fas fa-comments"></i> forum</button>
+          <button class="btn btn-sm" onclick="app.createNewPost()"><i class="fas fa-bullhorn"></i> post_intel</button>
         </div>
       </div>
 
       <div class="map-layout">
         <aside class="sidebar">
           <div class="panel">
-            <div class="panel-header"><i class="fas fa-rss"></i> // Recent Activity</div>
+            <div class="panel-header"><i class="fas fa-rss"></i> Recent Activity</div>
             <div class="panel-body"><div id="activity-feed" class="loading">Loading...</div></div>
           </div>
           <div class="panel">
-            <div class="panel-header"><i class="fas fa-chart-bar"></i> // Network Stats</div>
+            <div class="panel-header"><i class="fas fa-chart-bar"></i> Network Stats</div>
             <div class="panel-body">
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);">
-                <div style="background:var(--black-raised);padding:10px;text-align:center;"><div class="stat-value" id="total-locations" style="font-size:1.4rem;">0</div><div class="stat-label">Locations</div></div>
-                <div style="background:var(--black-raised);padding:10px;text-align:center;"><div class="stat-value" id="active-users" style="font-size:1.4rem;">0</div><div class="stat-label">Explorers</div></div>
+              <div class="sidebar-stats-grid">
+                <div class="sidebar-stat-cell"><div class="stat-value sidebar-stat-val" id="total-locations">0</div><div class="stat-label">Locations</div></div>
+                <div class="sidebar-stat-cell"><div class="stat-value sidebar-stat-val" id="active-users">0</div><div class="stat-label">Explorers</div></div>
               </div>
             </div>
           </div>
         </aside>
         <div class="map-container">
           <div id="map" tabindex="0" aria-label="Urban exploration map"></div>
-          <div id="location-indicator" class="location-indicator" style="display:none;">
+          <div id="location-indicator" class="location-indicator">
             <i class="fas fa-location-arrow"></i>
             <span>Detecting location...</span>
           </div>
@@ -122,26 +123,26 @@
 
     <!-- LOCATIONS VIEW -->
     <div class="view" id="locations-view">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="view-header">
         <h2>// My Locations</h2>
-        <div style="display:flex;gap:8px;">
+        <div class="flex gap-8">
           <button class="btn btn-sm" onclick="app.showView('map')"><i class="fas fa-map"></i> Map</button>
           <button class="btn btn-primary btn-sm" onclick="app.showAddLocationModal()"><i class="fas fa-plus"></i> Add</button>
         </div>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-        <input class="input" type="text" id="location-search" placeholder="Search..." style="flex:1;min-width:160px;max-width:280px;">
-        <select class="input" id="category-filter" style="width:auto;">
+      <div class="filter-row">
+        <input class="input filter-search" type="text" id="location-search" placeholder="Search...">
+        <select class="input select-auto" id="category-filter">
           <option value="">All Categories</option>
           <option>abandoned</option><option>industrial</option><option>infrastructure</option>
           <option>nature</option><option>underground</option><option>rooftop</option>
           <option>historical</option><option>other</option>
         </select>
-        <select class="input" id="risk-filter" style="width:auto;">
+        <select class="input select-auto" id="risk-filter">
           <option value="">All Risk</option>
           <option>safe</option><option>low</option><option>medium</option><option>high</option><option>extreme</option>
         </select>
-        <select class="input" id="sort-filter" style="width:auto;">
+        <select class="input select-auto" id="sort-filter">
           <option value="recent">Recent</option>
           <option value="name">Name</option>
           <option value="risk">Risk</option>
@@ -191,10 +192,15 @@
 
 <!-- Add/Edit Location Modal -->
 <div id="location-modal-overlay" class="modal-overlay" onclick="if(event.target===this)app.hideModal()">
-  <div class="modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
-    <button class="modal-close" onclick="app.hideModal()" aria-label="Close">&times;</button>
-    <div class="modal-header"><h3>Add Location</h3></div>
-    <form id="location-form">
+  <div class="modal modal-terminal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+    <div class="modal-titlebar">
+      <div class="modal-titlebar-dots"><span></span><span></span><span></span></div>
+      <span class="modal-titlebar-text">URBINDEX :: LOG LOCATION</span>
+      <button class="modal-titlebar-close" onclick="app.hideModal()" aria-label="Close">[X]</button>
+    </div>
+    <div class="modal-scanline"></div>
+    <form id="location-form" class="modal-body-padded">
+      <div class="modal-section-label">Identity</div>
       <div class="form-group">
         <label class="form-label">Location Name *</label>
         <input class="input" type="text" id="location-name" required maxlength="100" placeholder="// Enter name...">
@@ -203,7 +209,8 @@
         <label class="form-label">Description *</label>
         <textarea class="textarea" id="location-description" rows="3" maxlength="1000" placeholder="// Describe the location..." required></textarea>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="modal-section-label">Classification</div>
+      <div class="form-grid-2">
         <div class="form-group">
           <label class="form-label">Category</label>
           <select class="input" id="location-category">
@@ -221,16 +228,17 @@
           </select>
         </div>
       </div>
+      <div class="modal-section-label">Coordinates</div>
       <div class="form-group">
         <label class="form-label">Address / Geocode</label>
-        <div style="display:flex;gap:6px;">
-          <input class="input" type="text" id="location-address" placeholder="// Search address or place..." style="flex:1;">
+        <div class="form-inline">
+          <input class="input flex-1" type="text" id="location-address" placeholder="// Search address or place...">
           <button type="button" class="btn btn-sm" id="find-location-btn"><i class="fas fa-search"></i></button>
           <button type="button" class="btn btn-sm" id="use-my-location-btn"><i class="fas fa-crosshairs"></i></button>
         </div>
-        <div class="form-hint" style="margin-top:4px;color:var(--text-muted);font-size:0.8rem;">Or click on the map to pin a location</div>
+        <div class="form-hint">Or click on the map to pin a location</div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="form-grid-2">
         <div class="form-group">
           <label class="form-label">Latitude</label>
           <input class="input" type="number" id="location-lat" step="any" placeholder="0.000000">
@@ -240,16 +248,16 @@
           <input class="input" type="number" id="location-lng" step="any" placeholder="0.000000">
         </div>
       </div>
-      <div id="coordinates-display" style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">Click on map or use address to set location</div>
+      <div id="coordinates-display" class="coords-display">Click on map or use address to set location</div>
+      <div class="modal-section-label">Tags</div>
       <div class="form-group">
-        <label class="form-label">Tags</label>
-        <div style="display:flex;gap:6px;margin-bottom:6px;">
-          <input class="input" type="text" id="tag-input" placeholder="Add tag, press Enter..." maxlength="25" style="flex:1;">
+        <div class="form-inline mb-6">
+          <input class="input flex-1" type="text" id="tag-input" placeholder="Add tag, press Enter..." maxlength="25">
         </div>
-        <div id="selected-tags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;"></div>
-        <div id="predefined-tags-list" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+        <div id="selected-tags" class="tag-chips mb-6"></div>
+        <div id="predefined-tags-list" class="tag-chips"></div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:12px;">
+      <div class="flex gap-8 mt-12">
         <button type="button" class="btn" onclick="app.hideModal()">Cancel</button>
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Location</button>
       </div>
@@ -288,7 +296,7 @@
             <span class="auth-prompt-char">&gt;</span>
             <input class="input auth-input" type="email" id="signin-email" required placeholder="user@domain.net" autocomplete="email">
           </div>
-          <div class="field-error" id="signin-email-error" style="display:none;"></div>
+          <div class="field-error hidden" id="signin-email-error"></div>
         </div>
         <div class="form-group">
           <label class="form-label auth-label" for="signin-password">PASSKEY:</label>
@@ -323,7 +331,7 @@
             <span class="auth-prompt-char">&gt;</span>
             <input class="input auth-input" type="email" id="signup-email" required placeholder="user@domain.net" autocomplete="email">
           </div>
-          <div class="field-error" id="signup-email-error" style="display:none;"></div>
+          <div class="field-error hidden" id="signup-email-error"></div>
         </div>
         <div class="form-group">
           <label class="form-label auth-label" for="signup-password">NEW PASSKEY:</label>
@@ -331,7 +339,7 @@
             <span class="auth-prompt-char">&gt;</span>
             <input class="input auth-input" type="password" id="signup-password" required placeholder="min 8 chars" autocomplete="new-password">
           </div>
-          <div class="field-error" id="signup-password-error" style="display:none;"></div>
+          <div class="field-error hidden" id="signup-password-error"></div>
           <div class="auth-strength-bar">
             <div id="password-strength-fill" class="strength-fill" style="width:0%;"></div>
           </div>
@@ -343,7 +351,7 @@
             <span class="auth-prompt-char">&gt;</span>
             <input class="input auth-input" type="password" id="signup-confirm-password" required placeholder="repeat passkey" autocomplete="new-password">
           </div>
-          <div class="field-error" id="signup-confirm-error" style="display:none;"></div>
+          <div class="field-error hidden" id="signup-confirm-error"></div>
         </div>
         <div class="auth-actions">
           <button type="submit" class="btn btn-primary auth-submit-btn"><i class="fas fa-user-plus"></i> REGISTER</button>
@@ -369,7 +377,7 @@
         <label class="form-label" for="reset-email">Email Address</label>
         <input class="input" type="email" id="reset-email" required placeholder="user@example.com">
       </div>
-      <div style="display:flex;gap:8px;margin-top:12px;">
+      <div class="flex gap-8 mt-12">
         <button type="button" class="btn" onclick="app.hidePasswordResetModal()">Cancel</button>
         <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send Reset Link</button>
       </div>
@@ -379,10 +387,15 @@
 
 <!-- Edit Profile Modal -->
 <div id="edit-profile-modal" class="modal-overlay" onclick="if(event.target===this)app.hideEditProfileModal()">
-  <div class="modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
-    <button class="modal-close" onclick="app.hideEditProfileModal()" aria-label="Close">&times;</button>
-    <div class="modal-header"><h3>// Edit Profile</h3></div>
-    <form id="edit-profile-form">
+  <div class="modal modal-terminal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+    <div class="modal-titlebar">
+      <div class="modal-titlebar-dots"><span></span><span></span><span></span></div>
+      <span class="modal-titlebar-text">URBINDEX :: EDIT IDENTITY</span>
+      <button class="modal-titlebar-close" onclick="app.hideEditProfileModal()" aria-label="Close">[X]</button>
+    </div>
+    <div class="modal-scanline"></div>
+    <form id="edit-profile-form" class="modal-body-padded">
+      <div class="modal-section-label">Identity</div>
       <div class="form-group">
         <label class="form-label" for="profile-display-name">Display Name</label>
         <input class="input" type="text" id="profile-display-name" maxlength="50" placeholder="Your handle">
@@ -395,15 +408,17 @@
         <label class="form-label" for="profile-photo-url">Profile Photo URL</label>
         <input class="input" type="url" id="profile-photo-url" placeholder="https://...">
       </div>
+      <div class="modal-section-label">Links</div>
       <div class="form-group">
-        <label class="form-label" for="profile-links">Links (one per line)</label>
+        <label class="form-label" for="profile-links">URLs (one per line)</label>
         <textarea class="textarea" id="profile-links" rows="3" placeholder="https://..."></textarea>
       </div>
+      <div class="modal-section-label">Gallery</div>
       <div class="form-group">
-        <label class="form-label" for="profile-gallery">Gallery Image URLs (one per line)</label>
+        <label class="form-label" for="profile-gallery">Image URLs (one per line)</label>
         <textarea class="textarea" id="profile-gallery" rows="3" placeholder="https://..."></textarea>
       </div>
-      <div style="display:flex;gap:8px;margin-top:12px;">
+      <div class="flex gap-8 mt-12">
         <button type="button" class="btn" onclick="app.hideEditProfileModal()">Cancel</button>
         <button type="submit" class="btn btn-primary" id="profile-submit-btn"><i class="fas fa-save"></i> Save Changes</button>
       </div>
@@ -434,7 +449,7 @@
     <div class="modal-header"><h3>// GLOBAL SEARCH</h3></div>
     <div class="modal-body">
       <input class="form-control" type="text" id="global-search-input" placeholder="Search locations, posts, users..." autofocus>
-      <div id="global-search-results" style="margin-top:16px;"></div>
+      <div id="global-search-results" class="search-results"></div>
     </div>
   </div>
 </div>

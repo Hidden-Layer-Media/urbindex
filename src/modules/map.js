@@ -1,8 +1,8 @@
 export const mapMethods = {
   initMap() {
     const mapEl = document.getElementById('map');
-    if (!mapEl) { this.showError('Map element not found.'); return; }
-    this.initializeMapWithLocation();
+    if (!mapEl) { this.showError('Map element not found.'); return Promise.resolve(); }
+    return this.initializeMapWithLocation();
   },
 
   async initializeMapWithLocation() {
@@ -36,9 +36,6 @@ export const mapMethods = {
       subdomains: 'abcd',
       maxZoom: 19,
     }).addTo(this.map);
-
-    this.markerClusterGroup = L.markerClusterGroup({ maxClusterRadius: 60 });
-    this.map.addLayer(this.markerClusterGroup);
 
     this.map.on('click', e => this.handleMapClick(e));
     window.addEventListener('resize', () => { if (this.map) setTimeout(() => this.map.invalidateSize(), 100); });
@@ -133,11 +130,11 @@ export const mapMethods = {
       const m = L.marker([lat, lng], {
         icon: L.divIcon({
           className: 'user-location-marker',
-          html: '<div style="background:var(--green-term);width:14px;height:14px;border-radius:50%;border:2px solid var(--border);box-shadow:0 0 8px rgba(0,255,65,0.6);"></div>',
+          html: '<div class="user-position-dot"></div>',
           iconSize: [14, 14], iconAnchor: [7, 7],
         }),
       }).addTo(this.map);
-      m.bindPopup(`<div style="font-family:var(--font-mono);font-size:11px;color:#000"><strong style="color:var(--black)">// YOUR POSITION</strong><br>${lat.toFixed(6)}, ${lng.toFixed(6)}</div>`).openPopup();
+      m.bindPopup(`<div class="map-popup"><div class="map-popup-title">// YOUR POSITION</div><div class="map-popup-desc">${lat.toFixed(6)}, ${lng.toFixed(6)}</div></div>`).openPopup();
       setTimeout(() => this.map.removeLayer(m), 10000);
       this.cacheUserLocation(lat, lng);
       this.showToast('Map centered on your location', 'success');
@@ -167,13 +164,13 @@ export const mapMethods = {
   showLocationIndicator(type, message) {
     const el = document.getElementById('location-indicator');
     if (!el) return;
-    el.style.display = 'flex';
+    el.classList.add('active');
     el.querySelector('span').textContent = message;
   },
 
   hideLocationIndicator() {
     const el = document.getElementById('location-indicator');
-    if (el) el.style.display = 'none';
+    if (el) el.classList.remove('active');
   },
 
   focusMapOnLocation(lat, lng, zoom = 15) {
@@ -228,7 +225,7 @@ export const mapMethods = {
     const input = document.getElementById('location-address');
     const btn   = document.getElementById('find-location-btn');
     if (!input?.value.trim()) { this.showToast('Enter an address first', 'warning'); return; }
-    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true; }
+    this.setButtonLoading(btn, true, '');
     try {
       const coords = await this.geocodeAddress(input.value.trim());
       await this.setLocationFromCoordinates(coords.lat, coords.lng, coords.displayName);
@@ -236,13 +233,13 @@ export const mapMethods = {
     } catch (err) {
       this.showToast(err.message.includes('not found') ? 'Address not found' : 'Geocoding failed', 'error');
     } finally {
-      if (btn) { btn.innerHTML = '<i class="fas fa-search"></i>'; btn.disabled = false; }
+      this.setButtonLoading(btn, false);
     }
   },
 
   async handleMyLocation() {
     const btn = document.getElementById('use-my-location-btn');
-    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true; }
+    this.setButtonLoading(btn, true, '');
     try {
       const [lat, lng] = await this.getUserLocation();
       const address = await this.reverseGeocode(lat, lng);
@@ -251,54 +248,8 @@ export const mapMethods = {
     } catch (err) {
       this.showToast(err.message, 'error');
     } finally {
-      if (btn) { btn.innerHTML = '<i class="fas fa-crosshairs"></i>'; btn.disabled = false; }
+      this.setButtonLoading(btn, false);
     }
   },
 
-  createLocationMarker(id, data, lat, lng) {
-    const color = this.getRiskColor(data.riskLevel);
-    const marker = L.marker([lat, lng], {
-      icon: L.divIcon({
-        className: 'custom-location-marker',
-        html: `<div class="risk-marker-inner" style="background:${color};"></div>`,
-        iconSize: [14, 14], iconAnchor: [7, 7],
-      }),
-    })
-      .bindTooltip(data.name || 'Unknown', { direction: 'top', offset: [0, -10] })
-      .bindPopup(this.createLocationPopup(data, id));
-    return marker;
-  },
-
-  createLocationPopup(data, id) {
-    return `
-      <div style="font-family:var(--font-mono);font-size:11px;min-width:180px;background:var(--black);color:var(--text);padding:10px;border:1px solid var(--yellow-dim);">
-        <div style="color:var(--yellow);font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">${this.escapeHtml(data.name)}</div>
-        <div style="color:var(--text-muted);margin-bottom:8px;">${this.escapeHtml((data.description || '').substring(0, 80))}</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-          <span style="color:var(--text-muted);font-size:10px;">// ${this.escapeHtml(data.category || 'unknown')}</span>
-          <span style="color:${this.getRiskColor(data.riskLevel)};font-size:10px;">${this.escapeHtml(data.riskLevel || 'unknown')}</span>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="btn btn-sm btn-primary" onclick="app.showLocationDetailModal('${id}',{id:'${id}',...JSON.parse(document.querySelector('[data-loc-${id}]')?.dataset?.loc||'{}')})" style="font-size:9px;">Detail</button>
-          ${this.currentUser ? `<button class="btn btn-sm" onclick="app.checkInLocation('${id}')" style="font-size:9px;">Check In</button>` : ''}
-        </div>
-      </div>
-    `;
-  },
-
-  updateMapMarkers(locations) {
-    if (!this.map || !this.markerClusterGroup) return;
-    this.markerClusterGroup.clearLayers();
-    locations.forEach(({ id, data }) => {
-      if (data.coordinates?.length === 2) {
-        const m = this.createLocationMarker(id, data, data.coordinates[0], data.coordinates[1]);
-        if (m) this.markerClusterGroup.addLayer(m);
-      }
-    });
-  },
-
-  clearMarkers() {
-    if (this.markerClusterGroup) this.markerClusterGroup.clearLayers();
-    this.markers.clear();
-  },
 };
