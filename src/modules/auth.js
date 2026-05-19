@@ -251,6 +251,7 @@ export const authMethods = {
       btn?.setAttribute('title', 'Sign in or create an account');
       dot?.classList.add('offline');
     }
+    document.querySelector('.nav-btn[data-view="messages"]')?.classList.toggle('hidden', !this.currentUser);
     // re-sync status text with current network state (don't hardcode here)
     this.updateOnlineStatus(navigator.onLine);
   },
@@ -458,6 +459,10 @@ export const authMethods = {
         online: true,
       }, { merge: true });
     } catch {}
+    try {
+      const settingsDoc = await this.db.collection('user_settings').doc(this.currentUser.uid).get();
+      this._locationVisibility = settingsDoc.exists ? (settingsDoc.data().locationVisibility || 'public') : 'public';
+    } catch { this._locationVisibility = 'public'; }
   },
 
   handleProfileButtonClick() {

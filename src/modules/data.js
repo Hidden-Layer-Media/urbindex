@@ -128,7 +128,7 @@ export const dataMethods = {
     this.unsubActivity = this.db.collection('locations').where('status', '==', 'active').orderBy('createdAt', 'desc').limit(10).onSnapshot(snap => {
       const feed = document.getElementById('activity-feed');
       if (!feed) return;
-      if (snap.empty) { feed.innerHTML = '<div class="empty-state">No recent activity</div>'; return; }
+      if (snap.empty) { feed.innerHTML = '<div class="empty-state"><i class="fas fa-rss"></i><p>No recent activity</p></div>'; return; }
       feed.innerHTML = '';
       snap.forEach(doc => {
         const data = doc.data();
@@ -209,7 +209,7 @@ export const dataMethods = {
     if (!this.currentUser) { container.innerHTML = '<div class="text-muted">Sign in to view notifications</div>'; return; }
     try {
       const snap = await this.db.collection('user_notifications').where('userId', '==', this.currentUser.uid).orderBy('createdAt', 'desc').limit(30).get();
-      if (snap.empty) { container.innerHTML = '<div class="empty-state">[ NO NOTIFICATIONS ]</div>'; return; }
+      if (snap.empty) { container.innerHTML = '<div class="empty-state"><i class="fas fa-bell-slash"></i><p>No notifications</p></div>'; return; }
       container.innerHTML = '';
       snap.forEach(doc => {
         const d = doc.data();

@@ -98,11 +98,7 @@ export const locationsMethods = {
         payload.createdByName = this.currentUser.displayName || 'Explorer';
         payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
         payload.status = 'active';
-        // inherit user's location visibility preference
-        try {
-          const settingsDoc = await this.db.collection('user_settings').doc(this.currentUser.uid).get();
-          payload.visibility = settingsDoc.exists ? (settingsDoc.data().locationVisibility || 'public') : 'public';
-        } catch { payload.visibility = 'public'; }
+        payload.visibility = this._locationVisibility || 'public';
         await this.db.collection('locations').add(payload);
         this.showToast('Location added successfully!', 'success');
         await this.updateUserBadges(this.currentUser.uid, 'add_location');
@@ -186,7 +182,7 @@ export const locationsMethods = {
     grid.innerHTML = '<div class="loading">Loading your locations...</div>';
     try {
       const snap = await this.db.collection('locations').where('createdBy', '==', this.currentUser.uid).where('status', '==', 'active').orderBy('createdAt', 'desc').get();
-      if (snap.empty) { grid.innerHTML = '<div class="empty-state">[ NO LOCATIONS ] — Add your first location!</div>'; return; }
+      if (snap.empty) { grid.innerHTML = '<div class="empty-state"><i class="fas fa-map-marker-alt"></i><p>No locations yet — drop your first spot from the map.</p></div>'; return; }
       this.allUserLocations = [];
       snap.forEach(doc => this.allUserLocations.push({ id: doc.id, data: doc.data() }));
       this.renderFilteredLocations();
@@ -222,7 +218,7 @@ export const locationsMethods = {
 
     const grid = document.getElementById('locations-grid');
     if (!grid) return;
-    if (!filtered.length) { grid.innerHTML = '<div class="empty-state">[ NO RESULTS ] — No locations match your criteria.</div>'; return; }
+    if (!filtered.length) { grid.innerHTML = '<div class="empty-state"><i class="fas fa-search"></i><p>No locations match your filters.</p></div>'; return; }
 
     grid.innerHTML = '';
     grid.className = 'locations-grid';

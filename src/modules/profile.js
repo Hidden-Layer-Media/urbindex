@@ -102,7 +102,7 @@ export const profileMethods = {
               : this.currentUser
                 ? `<div class="profile-social-btns">
                     <button class="btn btn-primary" id="follow-btn-${targetId}" onclick="app.toggleFollow('${targetId}')"><i class="fas fa-user-plus"></i> Follow</button>
-                    <button class="btn btn-icon" onclick="app.messageUser('${targetId}')" title="Message"><i class="fas fa-envelope"></i></button>
+                    <button class="btn btn-icon" onclick="app.messageUser('${targetId}','${this.escapeHtml(name)}')" title="Message"><i class="fas fa-envelope"></i></button>
                   </div>`
                 : ''
             }
@@ -129,7 +129,10 @@ export const profileMethods = {
             </section>
 
             ${total > 0 ? `<section class="panel">
-              <div class="panel-header">Recent Spots</div>
+              <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;">
+                <span>Recent Spots</span>
+                ${total > 4 ? `<button class="btn btn-sm" onclick="app.viewUserLocations('${targetId}')"><i class="fas fa-list"></i> All ${total}</button>` : ''}
+              </div>
               <div class="panel-body profile-highlights-body">${highlights}</div>
             </section>` : ''}
 
@@ -190,6 +193,26 @@ export const profileMethods = {
     }).catch(() => {});
     modal.classList.add('active'); modal.setAttribute('aria-hidden', 'false');
     setTimeout(() => document.getElementById('profile-display-name')?.focus(), 100);
+    const galleryInput = document.getElementById('profile-gallery');
+    if (galleryInput && !galleryInput._previewBound) {
+      galleryInput._previewBound = true;
+      let t;
+      galleryInput.addEventListener('input', () => {
+        clearTimeout(t);
+        t = setTimeout(() => this._renderGalleryPreview(galleryInput.value), 400);
+      });
+    }
+  },
+
+  _renderGalleryPreview(raw) {
+    const preview = document.getElementById('profile-gallery-preview');
+    if (!preview) return;
+    const urls = raw.split(/\n+/).map(u => u.trim()).filter(u => /^https?:\/\/.+/i.test(u)).slice(0, 12);
+    if (!urls.length) { preview.innerHTML = ''; return; }
+    preview.innerHTML = urls.map(u => {
+      const safe = this.escapeHtml(u);
+      return `<img src="${safe}" alt="preview" onerror="this.outerHTML='<div class=\\'photo-preview-err\\'>bad url</div>'">`;
+    }).join('');
   },
 
   showEditProfileModal() { return this.showEditProfile(); },
@@ -306,45 +329,11 @@ export const profileMethods = {
     if (modal) { modal.classList.remove('active'); modal.setAttribute('aria-hidden', 'true'); }
   },
 
-  messageUser(userId) {
+  messageUser(userId, displayName) {
     if (!this.currentUser) { this.showToast('Sign in to message explorers', 'warning'); this.handleAuth(); return; }
     if (!userId) { this.showToast('No recipient selected', 'error'); return; }
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay active';
-    overlay.innerHTML = `
-      <div class="modal">
-        <div class="modal-header">
-          <span>// SEND MESSAGE</span>
-          <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
-        </div>
-        <div class="modal-body">
-          <form id="_msg-form">
-            <div class="form-group">
-              <label class="form-label">Message</label>
-              <textarea class="textarea" id="_msg-body" placeholder="Drop your message..." required maxlength="500" rows="3" autofocus></textarea>
-              <div class="field-help">Max 500 characters</div>
-            </div>
-            <div class="form-actions">
-              <button type="button" class="btn" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
-              <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send</button>
-            </div>
-          </form>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-    overlay.querySelector('#_msg-form').addEventListener('submit', async e => {
-      e.preventDefault();
-      const body = this.sanitizeInput(overlay.querySelector('#_msg-body').value.trim());
-      if (!body) return;
-      const btn = e.target.querySelector('[type="submit"]');
-      btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-      try {
-        await this.db.collection('direct_messages').add({ toUserId: userId, fromUserId: this.currentUser.uid, fromDisplayName: this.currentUser.displayName || 'Explorer', body, read: false, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-        overlay.remove();
-        this.showToast('Message sent', 'success');
-      } catch { this.showToast('Failed to send message', 'error'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send'; }
-    });
+    this.showView('messages');
+    this.openThread(userId, displayName || 'Explorer');
   },
 
   async submitProfilePost(userId) {
