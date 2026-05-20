@@ -77,7 +77,7 @@ export const socialMethods = {
       </div>
 
       <div id="social-trending-tags" class="feed-trending"></div>
-      <div id="social-feed-container" class="loading">Loading feed...</div>
+      <div id="social-feed-container"><div class="loading">Loading feed...</div></div>
     `;
 
     this.bindSocialComposer();
@@ -121,6 +121,14 @@ export const socialMethods = {
     if (refreshBtn) { refreshBtn.disabled = true; refreshBtn.querySelector('i')?.classList.add('fa-spin'); }
     container.innerHTML = '<div class="loading">Loading...</div>';
     this._socialFeedLastDoc = null;
+    if (this.currentUser) {
+      try {
+        const snap = await this.db.collection('user_followers').where('followerId', '==', this.currentUser.uid).get();
+        this._followingIds = new Set(snap.docs.map(d => d.data().followingId));
+      } catch { this._followingIds = new Set(); }
+    } else {
+      this._followingIds = new Set();
+    }
     try {
       const snap = await this.db.collection('forum')
         .orderBy('createdAt', 'desc')
@@ -169,9 +177,7 @@ export const socialMethods = {
     if (el('social-post-count')) el('social-post-count').textContent = items.length;
     if (el('social-authors-count')) el('social-authors-count').textContent = authors.size;
     if (this.currentUser && el('social-following-count')) {
-      this.db.collection('user_followers').where('followerId', '==', this.currentUser.uid).get()
-        .then(snap => { if (el('social-following-count')) el('social-following-count').textContent = snap.size; })
-        .catch(() => {});
+      el('social-following-count').textContent = this._followingIds?.size ?? '--';
     }
   },
 
@@ -239,6 +245,57 @@ export const socialMethods = {
 
   searchSocialFeed() { this.filterSocialFeed(); },
 
+  _buildFeedCardHtml(item) {
+    const ts = item.createdAt?.toDate ? this.timeAgo(item.createdAt.toDate()) : 'recently';
+    const handle = this.escapeHtml(item.displayName || 'Explorer');
+    const initials = (item.displayName || 'EX').slice(0, 2).toUpperCase();
+    const body = this.escapeHtml(item.body || '');
+    const tags = (item.tags || []).filter(Boolean)
+      .map(t => `<button class="feed-tag" onclick="app.applyTagFilter('${this.escapeHtml(t)}')">#${this.escapeHtml(t)}</button>`)
+      .join('');
+    const isOwn = this.currentUser && item.createdBy === this.currentUser.uid;
+    const isOther = this.currentUser && !isOwn && item.createdBy;
+    const headActions = `
+      ${isOther ? `<button class="feed-follow-btn btn btn-sm" id="follow-feed-${item.createdBy}" onclick="app.toggleFollowFromFeed('${item.createdBy}')">Follow</button>` : ''}
+      ${isOwn ? `<button class="feed-delete-btn" title="Delete post" onclick="app.deleteOwnPost('${item.id}',this)"><i class="fas fa-trash"></i></button>` : ''}
+    `;
+    const locationAction = item.locationId
+      ? `<button class="feed-action" onclick="app.viewPostLocation('${item.id}','${item.locationId}')" title="View location"><i class="fas fa-map-marker-alt"></i></button>`
+      : '';
+    return `
+      <div class="feed-card-head">
+        <div class="feed-card-avatar">${initials}</div>
+        <div class="feed-card-identity">
+          <span class="feed-card-handle">${handle}</span>
+          <span class="feed-card-time">// ${ts}</span>
+        </div>
+        <div class="feed-card-head-actions">${headActions}</div>
+      </div>
+      <div class="feed-card-body">${body}</div>
+      ${tags ? `<div class="feed-card-tags">${tags}</div>` : ''}
+      <div class="feed-card-foot">
+        <div class="feed-actions-left">
+          <button class="feed-action feed-like-btn" id="like-btn-${item.id}" onclick="app.togglePostLike('${item.id}')" title="Like">
+            <i class="fas fa-heart"></i><span id="like-count-${item.id}">${item.likesCount || 0}</span>
+          </button>
+          <button class="feed-action" onclick="app.togglePostComments('${item.id}')" title="Comments">
+            <i class="fas fa-comment-alt"></i><span>${item.commentCount || 0}</span>
+          </button>
+          ${locationAction}
+        </div>
+        <span class="feed-card-id">// ${item.id.slice(0, 8)}</span>
+      </div>
+      <div id="comments-panel-${item.id}" class="feed-comments hidden">
+        <div id="post-comments-${item.id}" class="feed-comments-list"></div>
+        ${this.currentUser ? `
+          <div class="feed-comment-form">
+            <span class="feed-composer-gt">&gt;</span>
+            <input class="feed-comment-input" id="comment-field-${item.id}" placeholder="add intel...">
+            <button class="btn btn-primary btn-sm" onclick="app.submitPostComment('${item.id}')"><i class="fas fa-paper-plane"></i></button>
+          </div>` : ''}
+      </div>`;
+  },
+
   renderSocialFeed(activities, hasMore = false) {
     const container = document.getElementById('social-feed-container');
     if (!container) return;
@@ -256,60 +313,7 @@ export const socialMethods = {
       const el = document.createElement('div');
       el.className = 'feed-card';
       el.dataset.postId = item.id;
-
-      const ts = item.createdAt?.toDate ? this.timeAgo(item.createdAt.toDate()) : 'recently';
-      const handle = this.escapeHtml(item.displayName || 'Explorer');
-      const initials = (item.displayName || 'EX').slice(0, 2).toUpperCase();
-      const body = this.escapeHtml(item.body || '');
-      const tags = (item.tags || [])
-        .filter(Boolean)
-        .map(t => `<button class="feed-tag" onclick="app.applyTagFilter('${this.escapeHtml(t)}')">#${this.escapeHtml(t)}</button>`)
-        .join('');
-
-      const isOwn = this.currentUser && item.createdBy === this.currentUser.uid;
-      const isOther = this.currentUser && !isOwn && item.createdBy;
-
-      const headActions = `
-        ${isOther ? `<button class="feed-follow-btn btn btn-sm" id="follow-feed-${item.createdBy}" onclick="app.toggleFollowFromFeed('${item.createdBy}')">Follow</button>` : ''}
-        ${isOwn ? `<button class="feed-delete-btn" title="Delete post" onclick="app.deleteOwnPost('${item.id}',this)"><i class="fas fa-trash"></i></button>` : ''}
-      `;
-
-      const locationAction = item.locationId
-        ? `<button class="feed-action" onclick="app.viewPostLocation('${item.id}','${item.locationId}')" title="View location"><i class="fas fa-map-marker-alt"></i></button>`
-        : '';
-
-      el.innerHTML = `
-        <div class="feed-card-head">
-          <div class="feed-card-avatar">${initials}</div>
-          <div class="feed-card-identity">
-            <span class="feed-card-handle">${handle}</span>
-            <span class="feed-card-time">// ${ts}</span>
-          </div>
-          <div class="feed-card-head-actions">${headActions}</div>
-        </div>
-        <div class="feed-card-body">${body}</div>
-        ${tags ? `<div class="feed-card-tags">${tags}</div>` : ''}
-        <div class="feed-card-foot">
-          <div class="feed-actions-left">
-            <button class="feed-action feed-like-btn" id="like-btn-${item.id}" onclick="app.togglePostLike('${item.id}')" title="Like">
-              <i class="fas fa-heart"></i><span id="like-count-${item.id}">${item.likesCount || 0}</span>
-            </button>
-            <button class="feed-action" onclick="app.togglePostComments('${item.id}')" title="Comments">
-              <i class="fas fa-comment-alt"></i><span>${item.commentCount || 0}</span>
-            </button>
-            ${locationAction}
-          </div>
-          <span class="feed-card-id">// ${item.id.slice(0, 8)}</span>
-        </div>
-        <div id="comments-panel-${item.id}" class="feed-comments hidden">
-          <div id="post-comments-${item.id}" class="feed-comments-list"></div>
-          ${this.currentUser ? `
-            <div class="feed-comment-form">
-              <span class="feed-composer-gt">&gt;</span>
-              <input class="feed-comment-input" id="comment-field-${item.id}" placeholder="add intel...">
-              <button class="btn btn-primary btn-sm" onclick="app.submitPostComment('${item.id}')"><i class="fas fa-paper-plane"></i></button>
-            </div>` : ''}
-        </div>`;
+      el.innerHTML = this._buildFeedCardHtml(item);
       container.appendChild(el);
     });
     if (hasMore) {
@@ -320,6 +324,7 @@ export const socialMethods = {
     }
   },
 
+  // kept for reference — was identical to renderSocialFeed item loop; now shares _buildFeedCardHtml
   _appendSocialFeedItems(items, hasMore) {
     const container = document.getElementById('social-feed-container');
     if (!container) return;
@@ -329,51 +334,7 @@ export const socialMethods = {
       const el = document.createElement('div');
       el.className = 'feed-card';
       el.dataset.postId = item.id;
-      const ts = item.createdAt?.toDate ? this.timeAgo(item.createdAt.toDate()) : 'recently';
-      const handle = this.escapeHtml(item.displayName || 'Explorer');
-      const initials = (item.displayName || 'EX').slice(0, 2).toUpperCase();
-      const body = this.escapeHtml(item.body || '');
-      const tags = (item.tags || []).filter(Boolean)
-        .map(t => `<button class="feed-tag" onclick="app.applyTagFilter('${this.escapeHtml(t)}')">#${this.escapeHtml(t)}</button>`).join('');
-      const isOwn = this.currentUser && item.createdBy === this.currentUser.uid;
-      const isOther = this.currentUser && !isOwn && item.createdBy;
-      const headActions = `
-        ${isOther ? `<button class="feed-follow-btn btn btn-sm" id="follow-feed-${item.createdBy}" onclick="app.toggleFollowFromFeed('${item.createdBy}')">Follow</button>` : ''}
-        ${isOwn ? `<button class="feed-delete-btn" title="Delete post" onclick="app.deleteOwnPost('${item.id}',this)"><i class="fas fa-trash"></i></button>` : ''}`;
-      const locationAction = item.locationId
-        ? `<button class="feed-action" onclick="app.viewPostLocation('${item.id}','${item.locationId}')" title="View location"><i class="fas fa-map-marker-alt"></i></button>` : '';
-      el.innerHTML = `
-        <div class="feed-card-head">
-          <div class="feed-card-avatar">${initials}</div>
-          <div class="feed-card-identity">
-            <span class="feed-card-handle">${handle}</span>
-            <span class="feed-card-time">// ${ts}</span>
-          </div>
-          <div class="feed-card-head-actions">${headActions}</div>
-        </div>
-        <div class="feed-card-body">${body}</div>
-        ${tags ? `<div class="feed-card-tags">${tags}</div>` : ''}
-        <div class="feed-card-foot">
-          <div class="feed-actions-left">
-            <button class="feed-action feed-like-btn" id="like-btn-${item.id}" onclick="app.togglePostLike('${item.id}')" title="Like">
-              <i class="fas fa-heart"></i><span id="like-count-${item.id}">${item.likesCount || 0}</span>
-            </button>
-            <button class="feed-action" onclick="app.togglePostComments('${item.id}')" title="Comments">
-              <i class="fas fa-comment-alt"></i><span>${item.commentCount || 0}</span>
-            </button>
-            ${locationAction}
-          </div>
-          <span class="feed-card-id">// ${item.id.slice(0, 8)}</span>
-        </div>
-        <div id="comments-panel-${item.id}" class="feed-comments hidden">
-          <div id="post-comments-${item.id}" class="feed-comments-list"></div>
-          ${this.currentUser ? `
-            <div class="feed-comment-form">
-              <span class="feed-composer-gt">&gt;</span>
-              <input class="feed-comment-input" id="comment-field-${item.id}" placeholder="add intel...">
-              <button class="btn btn-primary btn-sm" onclick="app.submitPostComment('${item.id}')"><i class="fas fa-paper-plane"></i></button>
-            </div>` : ''}
-        </div>`;
+      el.innerHTML = this._buildFeedCardHtml(item);
       container.appendChild(el);
     });
     if (hasMore) {

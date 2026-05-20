@@ -39,6 +39,9 @@
         Session expires in <span id="session-countdown">5</span>m
         <button class="btn btn-sm" onclick="app.refreshSession()">Extend</button>
       </div>
+      <button class="btn btn-sm" onclick="document.getElementById('search-modal').classList.add('active');setTimeout(()=>document.getElementById('global-search-input')?.focus(),80)" title="Search (Ctrl+K)">
+        <i class="fas fa-search"></i>
+      </button>
       <button class="btn btn-sm" id="profile-btn" onclick="app.handleProfileButtonClick()">
         <i class="fas fa-user-circle"></i> <span id="profile-btn-text">Profile</span>
       </button>
@@ -103,7 +106,7 @@
         <aside class="sidebar">
           <div class="panel">
             <div class="panel-header"><i class="fas fa-rss"></i> Recent Activity</div>
-            <div class="panel-body"><div id="activity-feed" class="loading">Loading...</div></div>
+            <div class="panel-body"><div id="activity-feed"><div class="loading">Loading...</div></div></div>
           </div>
           <div class="panel">
             <div class="panel-header"><i class="fas fa-chart-bar"></i> Network Stats</div>
@@ -111,6 +114,7 @@
               <div class="sidebar-stats-grid">
                 <div class="sidebar-stat-cell"><div class="stat-value sidebar-stat-val" id="total-locations">0</div><div class="stat-label">Locations</div></div>
                 <div class="sidebar-stat-cell"><div class="stat-value sidebar-stat-val" id="active-users">0</div><div class="stat-label">Explorers</div></div>
+                <div class="sidebar-stat-cell sidebar-stat-cell-wide"><div class="stat-value sidebar-stat-val" id="new-today-count">0</div><div class="stat-label">New Today</div></div>
               </div>
             </div>
           </div>
@@ -448,7 +452,7 @@
   <div class="modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
     <button class="modal-close" onclick="app.hideUserLocationsModal()" aria-label="Close">&times;</button>
     <div class="modal-header"><h3 id="user-locations-title">// User Locations</h3></div>
-    <div id="user-locations-list" class="loading">Loading...</div>
+    <div id="user-locations-list"><div class="loading">Loading...</div></div>
   </div>
 </div>
 
@@ -465,7 +469,7 @@
   <div class="modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
     <div class="modal-header"><h3>// GLOBAL SEARCH</h3></div>
     <div class="modal-body">
-      <input class="form-control" type="text" id="global-search-input" placeholder="Search locations, posts, users..." autofocus>
+      <input class="input" type="text" id="global-search-input" placeholder="Search locations, posts, users..." autofocus>
       <div id="global-search-results" class="search-results"></div>
     </div>
   </div>

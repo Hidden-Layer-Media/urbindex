@@ -42,7 +42,7 @@ export const profileMethods = {
         ? `<p class="cz-text text-dim">${this.escapeHtml(bio)}</p>`
         : `<p class="cz-text text-muted text-italic">${isOwn ? 'Add a short field note so others know your style.' : 'No bio shared yet.'}</p>`;
 
-      const highlights = locs.slice(0, 4).map(loc => {
+      const highlights = locs.slice(0, 6).map(loc => {
         const desc = typeof loc.description === 'string' ? loc.description : '';
         const risk = loc.riskLevel || 'unknown';
         const coords = Array.isArray(loc.coordinates) ? `<span class="profile-highlight-meta"><i class="fas fa-location-arrow"></i> ${loc.coordinates[0].toFixed(4)}, ${loc.coordinates[1].toFixed(4)}</span>` : '';
@@ -59,7 +59,8 @@ export const profileMethods = {
         </div>`;
       }).join('') || `<div class="profile-highlight text-muted text-center">${isOwn ? 'No locations yet. Drop your first spot from the map.' : 'No locations to display yet.'}</div>`;
 
-      const timeline = locs.slice(0, 4).map(loc => {
+      const timelineLimit = 6;
+      const timeline = locs.slice(0, timelineLimit).map(loc => {
         const desc = typeof loc.description === 'string' ? loc.description : '';
         const ts = loc.createdAt?.toDate ? this.timeAgo(loc.createdAt.toDate()) : 'Recently';
         return `<li class="timeline-item">
@@ -71,6 +72,9 @@ export const profileMethods = {
           </div>
         </li>`;
       }).join('') || `<li class="timeline-item"><div class="timeline-dot"></div><div class="text-muted">${isOwn ? 'Get your first ping in.' : 'No check-ins yet.'}</div></li>`;
+      const timelineMore = total > timelineLimit
+        ? `<li class="timeline-more"><button class="btn btn-sm" onclick="app.viewUserLocations('${targetId}')"><i class="fas fa-list"></i> +${total - timelineLimit} more</button></li>`
+        : '';
 
       const safeLinks = (Array.isArray(ud.links) ? ud.links.filter(Boolean) : []).filter(l => /^https?:\/\//i.test(l));
       const linksHtml = safeLinks.length
@@ -133,14 +137,14 @@ export const profileMethods = {
             ${total > 0 ? `<section class="panel">
               <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;">
                 <span>Recent Spots</span>
-                ${total > 4 ? `<button class="btn btn-sm" onclick="app.viewUserLocations('${targetId}')"><i class="fas fa-list"></i> All ${total}</button>` : ''}
+                ${total > 6 ? `<button class="btn btn-sm" onclick="app.viewUserLocations('${targetId}')"><i class="fas fa-list"></i> All ${total}</button>` : ''}
               </div>
               <div class="panel-body profile-highlights-body">${highlights}</div>
             </section>` : ''}
 
             <section class="panel">
-              <div class="panel-header">Activity Log</div>
-              <div class="terminal-log"><ul class="timeline-list">${timeline}</ul></div>
+              <div class="panel-header">Field Log <span style="font-size:0.75em;opacity:0.6;font-weight:normal;">// locations added</span></div>
+              <div class="terminal-log"><ul class="timeline-list">${timeline}${timelineMore}</ul></div>
             </section>
 
             ${galleryHtml ? `<section class="panel">
@@ -157,7 +161,7 @@ export const profileMethods = {
                 </div>
                 <div id="intel-posts-pane">
                   ${isOwn ? `<div class="form-group"><textarea class="textarea" id="profile-post-input" rows="2" placeholder="Drop intel..."></textarea><button class="btn btn-primary profile-submit-btn" onclick="app.submitProfilePost('${targetId}')"><i class="fas fa-paper-plane"></i> Post</button></div>` : ''}
-                  <div id="profile-posts-list" class="loading">Loading posts...</div>
+                  <div id="profile-posts-list"><div class="loading">Loading posts...</div></div>
                 </div>
                 <div id="intel-wall-pane" class="hidden">
                   ${this.currentUser
@@ -167,7 +171,7 @@ export const profileMethods = {
                       </div>`
                     : `<p class="text-muted mb-12">Sign in to leave a note.</p>`
                   }
-                  <div id="profile-comments-list" class="loading">Loading...</div>
+                  <div id="profile-comments-list"><div class="loading">Loading...</div></div>
                 </div>
               </div>
             </section>

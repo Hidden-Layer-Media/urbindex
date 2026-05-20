@@ -226,26 +226,29 @@ export const locationsMethods = {
       const card = document.createElement('div');
       card.className = 'location-card';
       const score = this.getLocationScore(data);
+      const desc = data.description || '';
+      const truncDesc = desc.length > 120 ? desc.substring(0, 120) + '...' : desc;
       card.innerHTML = `
         <div class="location-header">
           <h4>${this.escapeHtml(data.name)}</h4>
           <span class="risk risk-${data.riskLevel}">${data.riskLevel}</span>
         </div>
-        <p class="location-card-desc">${this.escapeHtml(data.description)}</p>
+        <p class="location-card-desc">${this.escapeHtml(truncDesc)}</p>
         <div class="location-card-meta">
           <i class="fas fa-tag"></i> ${this.escapeHtml(data.category)}
-          ${data.tags?.length ? ` • <i class="fas fa-tags"></i> ${data.tags.slice(0,3).map(t => this.escapeHtml(t)).join(', ')}` : ''}
-          ${data.coordinates ? ` • <i class="fas fa-map-marker-alt"></i> ${data.coordinates[0].toFixed(4)}, ${data.coordinates[1].toFixed(4)}` : ''}
+          ${data.tags?.length ? ` &nbsp;<i class="fas fa-hashtag"></i> ${data.tags.slice(0,3).map(t => `<span class="card-tag">${this.escapeHtml(t)}</span>`).join('')}` : ''}
         </div>
+        ${data.coordinates ? `<div class="location-card-coords"><i class="fas fa-crosshairs"></i> ${data.coordinates[0].toFixed(4)}, ${data.coordinates[1].toFixed(4)}</div>` : ''}
         <div class="location-card-score">
           <button class="rating-btn" onclick="app.rateLocation('${id}',1)" title="Upvote"><i class="fas fa-thumbs-up"></i></button>
           <span class="cz-text">Score: <span id="rating-score-${id}">${score.toFixed(1)}</span></span>
           <button class="rating-btn" onclick="app.rateLocation('${id}',-1)" title="Downvote"><i class="fas fa-thumbs-down"></i></button>
         </div>
         <div class="location-actions">
-          <button class="btn" onclick="app.editLocation('${id}')"><i class="fas fa-edit"></i> Edit</button>
-          <button class="btn btn-danger" onclick="app.deleteLocation('${id}',this)"><i class="fas fa-trash"></i> Delete</button>
-          ${data.coordinates ? `<button class="btn" onclick="app.focusMapOnLocation(${data.coordinates[0]},${data.coordinates[1]})"><i class="fas fa-map"></i> Map</button>` : ''}
+          <button class="btn btn-sm" onclick="app.showLocationDetailModal('${id}')"><i class="fas fa-eye"></i> View</button>
+          <button class="btn btn-sm" onclick="app.editLocation('${id}')"><i class="fas fa-edit"></i> Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="app.deleteLocation('${id}',this)"><i class="fas fa-trash"></i></button>
+          ${data.coordinates ? `<button class="btn btn-sm" onclick="app.focusMapOnLocation(${data.coordinates[0]},${data.coordinates[1]})"><i class="fas fa-map"></i> Map</button>` : ''}
         </div>`;
       grid.appendChild(card);
       this.loadLocationRating(id);
@@ -397,26 +400,49 @@ export const locationsMethods = {
       const modal = document.getElementById('location-detail-modal');
       const content = document.getElementById('location-detail-content');
       if (!modal || !content) return;
+      const photosHtml = data.photos?.length
+        ? `<div class="detail-photos-strip">${data.photos.slice(0, 6).map((p, i) => `<img src="${this.escapeHtml(p)}" class="detail-photo-thumb" alt="photo" onclick="app.showLocationPhotoModal('${locationId}',${i})">`).join('')}</div>`
+        : '';
+      const tagsHtml = data.tags?.length
+        ? `<div class="detail-tags">${data.tags.map(t => `<span class="card-tag">${this.escapeHtml(t)}</span>`).join('')}</div>`
+        : '';
+      const date = data.createdAt ? new Date(data.createdAt.toDate?.() ?? data.createdAt).toLocaleDateString() : '';
+      const coords = data.coordinates?.length === 2 ? `${data.coordinates[0].toFixed(5)}, ${data.coordinates[1].toFixed(5)}` : '';
       content.innerHTML = `
-        <div class="location-modal-header">
-          <h3>${this.escapeHtml(data.name || 'Location')}</h3>
-          <button class="modal-close" onclick="document.getElementById('location-detail-modal').classList.remove('active')" aria-label="Close">&times;</button>
+        <div class="modal-header location-detail-modal-header">
+          <div>
+            <h3 class="location-detail-title">${this.escapeHtml(data.name || 'Location')}</h3>
+            <div class="location-detail-meta">
+              <span class="risk risk-${data.riskLevel || 'unknown'}">${data.riskLevel || 'unknown'}</span>
+              <span class="detail-cat-chip">${this.escapeHtml(data.category || 'other')}</span>
+              ${date ? `<span class="detail-date"><i class="fas fa-calendar-alt"></i> ${date}</span>` : ''}
+            </div>
+          </div>
         </div>
         <div class="modal-body">
-          <div class="location-detail-meta"><span class="risk risk-${data.riskLevel || 'unknown'}">${data.riskLevel || 'unknown'}</span> <span class="text-muted">${this.escapeHtml(data.category || '')}</span></div>
+          ${photosHtml}
           <p class="location-detail-desc">${this.escapeHtml(data.description || '')}</p>
-          ${data.tags?.length ? `<div class="location-detail-tags">${data.tags.map(t => `<span class="tag">${this.escapeHtml(t)}</span>`).join(' ')}</div>` : ''}
+          ${tagsHtml}
+          <div class="detail-stats-row">
+            <span class="detail-stat"><i class="fas fa-eye"></i> ${data.visitCount || 0} visits</span>
+            <span class="detail-stat"><i class="fas fa-heart"></i> ${data.likesCount || 0} likes</span>
+            ${coords ? `<span class="detail-stat detail-coords"><i class="fas fa-map-pin"></i> ${coords}</span>` : ''}
+          </div>
           ${this.currentUser ? `<div class="flex gap-8 location-detail-actions">
-            <button class="btn btn-primary" onclick="app.checkInLocation('${locationId}')" aria-label="Check In"><i class="fas fa-map-marker-alt"></i> Check In</button>
-            <button class="btn" onclick="app.likeLocation('${locationId}')" aria-label="Like"><i class="fas fa-heart"></i> Like</button>
-          </div>` : '<p class="text-muted">Sign in for more actions.</p>'}
-          <div id="comments-${locationId}" class="location-detail-comments"></div>
-          ${this.currentUser ? `<div class="flex gap-8 location-detail-comment-form">
-            <input class="form-control" id="comment-input-${locationId}" placeholder="Add a comment..." aria-label="Comment">
-            <button class="btn btn-primary" onclick="app.addComment('${locationId}',document.getElementById('comment-input-${locationId}').value)"><i class="fas fa-paper-plane"></i></button>
-          </div>` : ''}
+            <button class="btn btn-primary" onclick="app.checkInLocation('${locationId}')"><i class="fas fa-map-marker-alt"></i> Check In</button>
+            <button class="btn" onclick="app.likeLocation('${locationId}')"><i class="fas fa-heart"></i> Like</button>
+          </div>` : '<p class="text-muted small">Sign in for more actions.</p>'}
+          <div class="detail-comments-section">
+            <div class="detail-section-label">// COMMENTS</div>
+            <div id="comments-${locationId}" class="location-detail-comments"></div>
+            ${this.currentUser ? `<div class="flex gap-8 location-detail-comment-form mt-8">
+              <input class="input" id="comment-input-${locationId}" placeholder="Add a comment...">
+              <button class="btn btn-primary" onclick="app.addComment('${locationId}',document.getElementById('comment-input-${locationId}').value)"><i class="fas fa-paper-plane"></i></button>
+            </div>` : ''}
+          </div>
         </div>`;
       modal.classList.add('active');
+      modal.onclick = e => { if (e.target === modal) modal.classList.remove('active'); };
       this.loadLocationComments(locationId);
     }).catch(() => this.showToast('Failed to load location details', 'error'));
   },

@@ -30,6 +30,8 @@ export const dataMethods = {
       this.markerClusterGroup?.clearLayers();
       this.markers.clear();
       const valid = [];
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      let todayCount = 0;
       snap.forEach(doc => {
         try {
           const data = doc.data();
@@ -37,6 +39,8 @@ export const dataMethods = {
           const [lat, lng] = data.coordinates;
           if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
           if (data.visibility === 'private' && data.createdBy !== this.currentUser?.uid) return;
+          const ts = data.createdAt?.toDate?.();
+          if (ts && ts >= todayStart) todayCount++;
           const marker = L.marker([lat, lng], {
             icon: L.divIcon({
               className: 'ub-pin-wrap',
@@ -51,6 +55,8 @@ export const dataMethods = {
         } catch {}
       });
       valid.forEach(m => this.markerClusterGroup?.addLayer(m));
+      const todayEl = document.getElementById('new-today-count');
+      if (todayEl) todayEl.textContent = todayCount;
     }, err => {
       const msgs = { 'permission-denied': 'Please sign in to view locations', 'unavailable': 'Network error. Please check your connection.' };
       this.showToast(msgs[err.code] || 'Failed to load locations', 'error');
@@ -133,19 +139,29 @@ export const dataMethods = {
       snap.forEach(doc => {
         const data = doc.data();
         if (data.visibility === 'private' && data.createdBy !== this.currentUser?.uid) return;
+        const locId = doc.id;
+        const risk = data.riskLevel || 'unknown';
+        const cat = data.category || 'other';
         const item = document.createElement('div');
         item.className = 'activity-item';
+        item.dataset.lid = locId;
         item.innerHTML = `
-          <div class="activity-icon"><i class="fas fa-map-marker-alt"></i></div>
+          <div class="activity-icon risk-${risk}"><i class="fas fa-map-marker-alt"></i></div>
           <div class="activity-content">
-            <div><span class="activity-user">// ${this.escapeHtml(data.createdByName || 'explorer')}</span> tagged <strong>${this.escapeHtml(data.name)}</strong></div>
-            <div class="activity-time">${this.timeAgo(data.createdAt?.toDate?.())}</div>
+            <div class="activity-name-line"><span class="activity-user">${this.escapeHtml(data.createdByName || 'explorer')}</span> → <strong class="activity-loc-name">${this.escapeHtml(data.name)}</strong></div>
+            <div class="activity-meta">
+              <span class="activity-cat">${cat}</span>
+              <span class="activity-time">${this.timeAgo(data.createdAt?.toDate?.())}</span>
+            </div>
           </div>`;
+        item.addEventListener('click', () => this.showLocationDetailModal(locId));
         feed.appendChild(item);
       });
     }, err => {
       const feed = document.getElementById('activity-feed');
-      if (feed) feed.innerHTML = err.code === 'permission-denied' ? '' : '<div class="error">Failed to load activity</div>';
+      if (feed) feed.innerHTML = err.code === 'permission-denied'
+        ? '<div class="empty-state"><i class="fas fa-lock"></i><p>Sign in to view activity</p></div>'
+        : '<div class="error">Failed to load activity</div>';
     });
   },
 
@@ -199,7 +215,7 @@ export const dataMethods = {
           <button class="btn" onclick="app.markAllNotificationsAsRead()"><i class="fas fa-check-double"></i> Mark All Read</button>
         </div>
       </div>
-      <div id="notifications-content" class="loading">Loading notifications...</div>`;
+      <div id="notifications-content"><div class="loading">Loading notifications...</div></div>`;
     this.loadNotifications();
   },
 
@@ -214,10 +230,13 @@ export const dataMethods = {
       snap.forEach(doc => {
         const d = doc.data();
         const el = document.createElement('div');
+        const iconMap = { badge: 'fa-medal', like: 'fa-heart', comment: 'fa-comment-alt', follow: 'fa-user-plus', message: 'fa-envelope', checkin: 'fa-map-marker-alt' };
+        const icon = iconMap[d.type] || 'fa-bell';
         el.className = `notification-item${d.read ? '' : ' unread'}`;
         el.innerHTML = `
           <div class="notification-row">
-            <span>${this.escapeHtml(d.message)}</span>
+            <span class="notif-icon"><i class="fas ${icon}"></i></span>
+            <span class="notif-message">${this.escapeHtml(d.message)}</span>
             ${!d.read ? `<button class="btn notification-mark-btn" onclick="app.markNotificationAsRead('${doc.id}')"><i class="fas fa-check"></i></button>` : ''}
           </div>
           <div class="notification-time">${this.timeAgo(d.createdAt?.toDate?.())}</div>`;
@@ -261,7 +280,7 @@ export const dataMethods = {
         <h2>// ROUTES</h2>
         ${this.currentUser ? `<button class="btn btn-primary" onclick="app.createNewRoute()"><i class="fas fa-plus"></i> Plan Route</button>` : ''}
       </div>
-      <div id="routes-list" class="loading">Loading routes...</div>`;
+      <div id="routes-list"><div class="loading">Loading routes...</div></div>`;
     this.loadRoutes();
   },
 
@@ -322,7 +341,7 @@ export const dataMethods = {
         <h2>// GROUPS</h2>
         ${this.currentUser ? `<button class="btn btn-primary" onclick="app.createNewGroup()"><i class="fas fa-plus"></i> Create Group</button>` : ''}
       </div>
-      <div id="groups-list" class="loading">Loading groups...</div>`;
+      <div id="groups-list"><div class="loading">Loading groups...</div></div>`;
     this.loadGroups();
   },
 
@@ -418,7 +437,7 @@ export const dataMethods = {
         <h2 id="group-detail-title">// LOADING...</h2>
         <div id="group-detail-actions"></div>
       </div>
-      <div id="group-detail-body" class="loading">Loading group...</div>`;
+      <div id="group-detail-body"><div class="loading">Loading group...</div></div>`;
 
     try {
       const uid = this.currentUser?.uid;
@@ -541,7 +560,7 @@ export const dataMethods = {
       <div class="view-header">
         <h2>// MISSIONS</h2>
       </div>
-      <div id="missions-list" class="loading">Loading missions...</div>`;
+      <div id="missions-list"><div class="loading">Loading missions...</div></div>`;
     this.loadMissions();
   },
 
