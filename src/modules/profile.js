@@ -45,19 +45,19 @@ export const profileMethods = {
       const highlights = locs.slice(0, 6).map(loc => {
         const desc = typeof loc.description === 'string' ? loc.description : '';
         const risk = loc.riskLevel || 'unknown';
-        const coords = Array.isArray(loc.coordinates) ? `<span class="profile-highlight-meta"><i class="fas fa-location-arrow"></i> ${loc.coordinates[0].toFixed(4)}, ${loc.coordinates[1].toFixed(4)}</span>` : '';
-        return `<div class="profile-highlight">
+        return `<div class="profile-highlight" onclick="app.showLocationDetailModal('${loc.id}')" title="View details">
           <div class="profile-highlight-header">
             <h4>${this.escapeHtml(loc.name || 'Untitled')}</h4>
             <span class="risk risk-${risk}">${risk}</span>
           </div>
-          <div class="profile-highlight-desc">${this.escapeHtml(desc.substring(0, 90))}${desc.length > 90 ? '...' : ''}</div>
+          ${desc ? `<div class="profile-highlight-desc">${this.escapeHtml(desc.substring(0, 80))}${desc.length > 80 ? '...' : ''}</div>` : ''}
           <div class="profile-highlight-footer">
-            <span class="profile-highlight-meta"><i class="fas fa-tag"></i> ${this.escapeHtml(loc.category || 'uncategorized')}</span>
-            ${coords}
+            <span class="profile-highlight-meta"><i class="fas fa-tag"></i> ${this.escapeHtml(loc.category || 'other')}</span>
+            <span class="profile-highlight-meta"><i class="fas fa-eye"></i> ${loc.visitCount || 0}</span>
+            <span class="profile-highlight-meta"><i class="fas fa-heart"></i> ${loc.likesCount || 0}</span>
           </div>
         </div>`;
-      }).join('') || `<div class="profile-highlight text-muted text-center">${isOwn ? 'No locations yet. Drop your first spot from the map.' : 'No locations to display yet.'}</div>`;
+      }).join('') || `<div class="profile-highlight empty-state">${isOwn ? 'No locations yet. Drop your first spot from the map.' : 'No locations to display yet.'}</div>`;
 
       const timelineLimit = 6;
       const timeline = locs.slice(0, timelineLimit).map(loc => {

@@ -1087,22 +1087,19 @@ select.input {
 
 /* BBS-style empty state */
 .empty-state {
-  padding: 32px;
+  padding: 32px 16px;
   text-align: center;
   color: var(--text-muted);
   font-size: 11px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
-
-.empty-state::before {
-  content: '[ NO DATA ]';
-  display: block;
-  color: var(--border);
-  font-size: 16px;
-  letter-spacing: 4px;
-  margin-bottom: 8px;
-}
+.empty-state i     { font-size: 24px; color: var(--border); }
+.empty-state p     { margin: 0; }
+.empty-state .btn  { margin-top: 4px; }
 
 /* ══════════════════════════════════════════════
    LEAFLET MAP THEME — urbindex dark
@@ -1247,8 +1244,8 @@ select.input {
 .popup-cat-chip  { background: var(--black-raised); padding: 2px 5px; }
 .popup-photos    { margin: 8px 0; display: flex; gap: 4px; flex-wrap: wrap; }
 .popup-photo     { width: 64px; height: 64px; object-fit: cover; border: 1px solid var(--border); cursor: pointer; }
-.popup-tags      { margin: 4px 0; }
-.popup-tag       { display: inline-block; background: var(--yellow); color: #000; padding: 1px 5px; font-size: 0.7rem; margin-right: 3px; }
+.popup-tags      { margin: 4px 0; display: flex; flex-wrap: wrap; gap: 3px; }
+.popup-tag       { border: 1px solid var(--border); color: var(--text-muted); padding: 1px 5px; font-size: 9px; letter-spacing: 0.5px; }
 .popup-stats     { font-size: 0.75rem; color: var(--text-muted); margin: 6px 0; padding-top: 4px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
 
 /* ── Photo lightbox ── */
@@ -2456,9 +2453,10 @@ select.select:focus {
   flex-direction: column;
   gap: 6px;
   transition: var(--transition);
+  cursor: pointer;
 }
 
-.profile-highlight:hover { border-left-color: var(--yellow); }
+.profile-highlight:hover { border-left-color: var(--yellow); background: var(--black-panel); }
 
 .profile-highlight-header {
   display: flex;
@@ -2466,19 +2464,24 @@ select.select:focus {
   gap: 8px;
   align-items: center;
 }
-.profile-highlight-header h4 { margin: 0; }
+.profile-highlight-header h4 { margin: 0; font-size: 12px; }
 .profile-highlight-desc {
   color: var(--text-dim);
-  font-size: 0.9rem;
+  font-size: 11px;
+  line-height: 1.4;
 }
 .profile-highlight-footer {
   display: flex;
-  justify-content: space-between;
+  gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
 }
 .profile-highlight-meta {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .gallery-grid {
@@ -2625,6 +2628,7 @@ select.select:focus {
 }
 .view-header h2 { margin: 0; flex: 1; min-width: 0; }
 .view-header > *:last-child { flex-shrink: 0; }
+.view-result-count { font-size: 10px; color: var(--text-muted); letter-spacing: 1px; white-space: nowrap; align-self: center; }
 
 /* ══════════════════════════════════════
    GROUP CARDS
@@ -3339,13 +3343,18 @@ select.select:focus {
   text-shadow: 0 0 8px rgba(255, 34, 34, 0.4);
 }
 
-.feed-card-id {
+.feed-expand-btn {
+  display: block;
+  background: none;
+  border: none;
+  color: var(--yellow-muted);
   font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--text-muted);
-  letter-spacing: 1px;
-  opacity: 0.5;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px 0 0;
+  letter-spacing: 0.5px;
 }
+.feed-expand-btn:hover { color: var(--yellow); }
 
 /* ── Comments panel ── */
 .feed-comments {
@@ -3544,12 +3553,9 @@ select.select:focus {
   flex-shrink: 0;
 }
 
-.group-member-name {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-dim);
-}
-.group-member-name:hover { color: var(--yellow); }
+.group-member-name      { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
+.group-member-link      { cursor: pointer; }
+.group-member-link:hover { color: var(--yellow); }
 
 /* ══════════════════════════════════════
    PHOTO URL PREVIEW

@@ -31,15 +31,29 @@ export const mapMethods = {
       maxBoundsViscosity: 1.0,
     });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 19,
-    }).addTo(this.map);
+    const savedStyle = localStorage.getItem('urbindex-map-style') || 'dark';
+    this._tileLayer = this._makeTileLayer(savedStyle).addTo(this.map);
 
     this.map.on('click', e => this.handleMapClick(e));
     window.addEventListener('resize', () => { if (this.map) setTimeout(() => this.map.invalidateSize(), 100); });
     setTimeout(() => this.map.invalidateSize(), 200);
+  },
+
+  _makeTileLayer(style) {
+    const tiles = {
+      default: ['https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap', maxZoom: 19 }],
+      dark:    ['https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO', subdomains: 'abcd', maxZoom: 19 }],
+      terrain: ['https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO', subdomains: 'abcd', maxZoom: 19 }],
+    };
+    const [url, opts] = tiles[style] || tiles.dark;
+    return L.tileLayer(url, opts);
+  },
+
+  changeTileLayer(style) {
+    if (!this.map) return;
+    if (this._tileLayer) this.map.removeLayer(this._tileLayer);
+    this._tileLayer = this._makeTileLayer(style).addTo(this.map);
+    localStorage.setItem('urbindex-map-style', style);
   },
 
   handleMapClick(e) {

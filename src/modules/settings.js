@@ -21,12 +21,22 @@ export const settingsMethods = {
         <h3 class="settings-section-title"><i class="fas fa-user-cog"></i> Account Settings</h3>
         <div class="form-group">
           <label class="form-label">Display Name</label>
-          <input class="input" type="text" id="settings-display-name" value="${this.escapeHtml(this.currentUser.displayName || '')}" placeholder="Your display name">
+          <input class="input" type="text" id="settings-display-name" value="${this.escapeHtml(this.currentUser.displayName || '')}" placeholder="Your display name" maxlength="40">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bio</label>
+          <textarea class="textarea" id="settings-bio" rows="2" maxlength="200" placeholder="Short field note..."></textarea>
+          <div class="field-help">Max 200 characters. Shown on your profile.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Links</label>
+          <input class="input" type="url" id="settings-link-1" placeholder="https://...">
+          <div class="field-help">One URL shown on your profile.</div>
         </div>
         <div class="form-group">
           <label class="form-label">Email Address</label>
           <input class="input" type="email" id="settings-email" value="${this.escapeHtml(this.currentUser.email || '')}" disabled>
-          <div class="field-help">Email cannot be changed. Contact support if needed.</div>
+          <div class="field-help">Email cannot be changed.</div>
         </div>
         <div class="form-group">
           <label class="form-label">Account Status</label>
@@ -131,10 +141,21 @@ export const settingsMethods = {
 
     if (!this.currentUser) return;
     try {
-      const doc = await this.db.collection('user_settings').doc(this.currentUser.uid).get();
-      if (!doc.exists) return;
-      const s = doc.data();
+      const [settingsDoc, userDoc] = await Promise.all([
+        this.db.collection('user_settings').doc(this.currentUser.uid).get(),
+        this.db.collection('users').doc(this.currentUser.uid).get(),
+      ]);
 
+      if (userDoc.exists) {
+        const u = userDoc.data();
+        const bioEl = document.getElementById('settings-bio');
+        const linkEl = document.getElementById('settings-link-1');
+        if (bioEl && u.bio) bioEl.value = u.bio;
+        if (linkEl && u.links?.length) linkEl.value = u.links[0] || '';
+      }
+
+      if (!settingsDoc.exists) return;
+      const s = settingsDoc.data();
       const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
       set('settings-email-notifications', s.emailNotifications);
       set('settings-push-notifications', s.pushNotifications);
@@ -143,16 +164,26 @@ export const settingsMethods = {
       set('settings-location-visibility', s.locationVisibility);
       set('settings-activity-visibility', s.activityVisibility);
       set('settings-map-style', s.mapStyle);
+      if (s.mapStyle) this.changeTileLayer(s.mapStyle);
+      if (s.locationVisibility) this._locationVisibility = s.locationVisibility;
     } catch {}
   },
 
   async updateAccountSettings() {
     if (!this.currentUser) return;
     const name = document.getElementById('settings-display-name')?.value.trim();
+    const bio = this.sanitizeInput(document.getElementById('settings-bio')?.value.trim() || '');
+    const link = document.getElementById('settings-link-1')?.value.trim();
+    const links = link && /^https?:\/\//i.test(link) ? [link] : [];
     try {
       await this.currentUser.updateProfile({ displayName: name });
-      await this.db.collection('users').doc(this.currentUser.uid).update({ displayName: name, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-      this.showToast('Account settings updated successfully!', 'success');
+      await this.db.collection('users').doc(this.currentUser.uid).update({
+        displayName: name,
+        bio: bio.substring(0, 200),
+        links,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      this.showToast('Account settings saved', 'success');
       if (document.getElementById('profile-view')?.classList.contains('active')) this.loadProfile();
     } catch { this.showToast('Failed to update account settings', 'error'); }
   },
@@ -189,6 +220,7 @@ export const settingsMethods = {
         locSnap.forEach(doc => batch.update(doc.ref, { visibility: locationVisibility }));
         await batch.commit();
       }
+      this._locationVisibility = locationVisibility;
       this.showToast('Privacy settings updated!', 'success');
     } catch { this.showToast('Failed to update privacy settings', 'error'); }
   },
@@ -201,6 +233,7 @@ export const settingsMethods = {
     try {
       await this.db.collection('user_settings').doc(this.currentUser.uid).set({ mapStyle, intensity, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       this.updateTerminalIntensity(intensity);
+      if (mapStyle) this.changeTileLayer(mapStyle);
       this.showToast('Display settings updated!', 'success');
     } catch { this.showToast('Failed to update display settings', 'error'); }
   },

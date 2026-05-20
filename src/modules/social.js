@@ -28,7 +28,7 @@ export const socialMethods = {
 
       <div class="feed-composer panel" id="feed-composer">
         <div class="feed-composer-prompt">
-          <span class="feed-composer-addr">URBINDEX://net/post</span>
+          <span class="feed-composer-addr">URBINDEX://net/post${this.currentUser && !this.currentUser.isAnonymous ? '@' + (this.currentUser.displayName || 'user').toLowerCase().replace(/\s/g, '_') : ''}</span>
           <span class="feed-composer-blink">_</span>
           <span class="feed-composer-hint">ctrl+enter to post</span>
         </div>
@@ -249,7 +249,10 @@ export const socialMethods = {
     const ts = item.createdAt?.toDate ? this.timeAgo(item.createdAt.toDate()) : 'recently';
     const handle = this.escapeHtml(item.displayName || 'Explorer');
     const initials = (item.displayName || 'EX').slice(0, 2).toUpperCase();
-    const body = this.escapeHtml(item.body || '');
+    const rawBody = item.body || '';
+    const truncated = rawBody.length > 280;
+    const body = this.escapeHtml(truncated ? rawBody.substring(0, 280) : rawBody);
+    const expandBtn = truncated ? `<button class="feed-expand-btn" onclick="app._expandFeedCard(this,'${item.id}')">// show more</button>` : '';
     const tags = (item.tags || []).filter(Boolean)
       .map(t => `<button class="feed-tag" onclick="app.applyTagFilter('${this.escapeHtml(t)}')">#${this.escapeHtml(t)}</button>`)
       .join('');
@@ -260,7 +263,7 @@ export const socialMethods = {
       ${isOwn ? `<button class="feed-delete-btn" title="Delete post" onclick="app.deleteOwnPost('${item.id}',this)"><i class="fas fa-trash"></i></button>` : ''}
     `;
     const locationAction = item.locationId
-      ? `<button class="feed-action" onclick="app.viewPostLocation('${item.id}','${item.locationId}')" title="View location"><i class="fas fa-map-marker-alt"></i></button>`
+      ? `<button class="feed-action" onclick="app.viewPostLocation('${item.id}','${item.locationId}')" title="View on map"><i class="fas fa-map-marker-alt"></i></button>`
       : '';
     return `
       <div class="feed-card-head">
@@ -271,7 +274,7 @@ export const socialMethods = {
         </div>
         <div class="feed-card-head-actions">${headActions}</div>
       </div>
-      <div class="feed-card-body">${body}</div>
+      <div class="feed-card-body" id="feed-body-${item.id}">${body}${expandBtn}</div>
       ${tags ? `<div class="feed-card-tags">${tags}</div>` : ''}
       <div class="feed-card-foot">
         <div class="feed-actions-left">
@@ -283,7 +286,6 @@ export const socialMethods = {
           </button>
           ${locationAction}
         </div>
-        <span class="feed-card-id">// ${item.id.slice(0, 8)}</span>
       </div>
       <div id="comments-panel-${item.id}" class="feed-comments hidden">
         <div id="post-comments-${item.id}" class="feed-comments-list"></div>
@@ -376,6 +378,14 @@ export const socialMethods = {
       if (card) { card.classList.add('feed-card-deleted'); setTimeout(() => card.remove(), 300); }
       this.showToast('Post deleted', 'success');
     } catch { this.showToast('Failed to delete post', 'error'); btn.disabled = false; }
+  },
+
+  _expandFeedCard(btn, itemId) {
+    const item = this.socialFeedItems?.find(i => i.id === itemId);
+    const el = document.getElementById(`feed-body-${itemId}`);
+    if (!item || !el) return;
+    el.innerHTML = this.escapeHtml(item.body || '');
+    btn.remove();
   },
 
   async createNewPost() {

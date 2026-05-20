@@ -37,7 +37,7 @@ export const messageMethods = {
       <div class="view-header">
         <h2>// MESSAGES</h2>
       </div>
-      <div id="inbox-list" class="loading">Loading conversations...</div>`;
+      <div id="inbox-list"><div class="loading">Loading conversations...</div></div>`;
     await this._loadInbox();
   },
 
@@ -131,7 +131,7 @@ export const messageMethods = {
       // Mark received as read
       const batch = this.db.batch();
       received.docs.filter(d => !d.data().read).forEach(d => batch.update(d.ref, { read: true }));
-      batch.commit().then(() => this._updateMessagesBadge(0)).catch(() => {});
+      batch.commit().catch(() => {});
 
       const msgs = [];
       received.forEach(doc => msgs.push({ ...doc.data(), id: doc.id, mine: false }));

@@ -307,10 +307,10 @@ export const authMethods = {
     if (!fill || !txt) return;
     const v = this.checkPasswordStrength(pw);
     fill.className = 'strength-fill';
-    const map = { 1: ['strength-weak', 'Weak'], 2: ['strength-fair', 'Fair'], 3: ['strength-good', 'Good'], 4: ['strength-strong', 'Strong'] };
-    const [cls, label] = map[v.strength] || ['', 'Not entered'];
+    const map = { 1: ['strength-weak', 'WEAK'], 2: ['strength-fair', 'FAIR'], 3: ['strength-good', 'GOOD'], 4: ['strength-strong', 'STRONG'] };
+    const [cls, label] = map[v.strength] || ['', '---'];
     if (cls) fill.classList.add(cls);
-    txt.textContent = `Password strength: ${label}`;
+    txt.textContent = `STRENGTH: ${label}`;
   },
 
   validatePasswordConfirmation() {

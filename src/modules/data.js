@@ -86,15 +86,14 @@ export const dataMethods = {
       ? `<div class="popup-tags">${data.tags.slice(0,4).map(t => `<span class="popup-tag">${this.escapeHtml(t)}</span>`).join('')}</div>`
       : '';
     const isOwner = this.currentUser?.uid === data.createdBy;
-    const actions = this.currentUser
-      ? `<div class="map-popup-actions">
-          ${isOwner
-            ? `<button class="btn btn-sm" onclick="app.editLocation('${docId}')">Edit</button>
-               <button class="btn btn-sm btn-danger" onclick="app.deleteLocation('${docId}',this)">Delete</button>`
-            : ''}
-          <button class="btn btn-sm btn-success" onclick="app.checkInLocation('${docId}')">Check In</button>
-        </div>`
-      : `<div class="map-popup-actions"><button class="btn btn-sm btn-primary" onclick="app.showView('locations')">View All</button></div>`;
+    const actions = `<div class="map-popup-actions">
+      <button class="btn btn-sm btn-primary" onclick="app.showLocationDetailModal('${docId}')"><i class="fas fa-eye"></i> Details</button>
+      ${this.currentUser
+        ? `<button class="btn btn-sm btn-success" onclick="app.checkInLocation('${docId}')"><i class="fas fa-map-marker-alt"></i> Check In</button>
+           ${isOwner ? `<button class="btn btn-sm" onclick="app.editLocation('${docId}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="app.deleteLocation('${docId}',this)"><i class="fas fa-trash"></i></button>` : ''}`
+        : ''}
+    </div>`;
     return `
       <div class="map-popup">
         <div class="map-popup-title">${name}</div>
@@ -486,7 +485,10 @@ export const dataMethods = {
               </div>
               <p class="location-card-desc">${this.escapeHtml((d.description || '').substring(0, 80))}${(d.description || '').length > 80 ? '...' : ''}</p>
               <div class="location-card-meta"><i class="fas fa-user"></i> ${this.escapeHtml(d.createdByName || 'Explorer')}</div>
-              ${lat != null ? `<div class="location-actions"><button class="btn btn-sm" onclick="app.focusMapOnLocation(${lat},${lng})"><i class="fas fa-map"></i> View on Map</button></div>` : ''}
+              <div class="location-actions">
+                <button class="btn btn-sm btn-primary" onclick="app.showLocationDetailModal('${doc.id}')"><i class="fas fa-eye"></i> Details</button>
+                ${lat != null ? `<button class="btn btn-sm" onclick="app.focusMapOnLocation(${lat},${lng})"><i class="fas fa-map"></i> Map</button>` : ''}
+              </div>
             </div>`;
           }).join('');
       }
@@ -494,7 +496,7 @@ export const dataMethods = {
       const memberListHtml = memberUsers.length
         ? memberUsers.map(u => `<div class="group-member-row">
             <div class="group-member-avatar">${(u.displayName || 'E').charAt(0).toUpperCase()}</div>
-            <span class="group-member-name" onclick="app.showView('profile','${u.id}')" style="cursor:pointer;">${this.escapeHtml(u.displayName || 'Explorer')}</span>
+            <span class="group-member-name group-member-link" onclick="app.showView('profile','${u.id}')">${this.escapeHtml(u.displayName || 'Explorer')}</span>
           </div>`).join('')
         : '<div class="empty-state">No members yet.</div>';
 

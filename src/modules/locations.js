@@ -222,6 +222,8 @@ export const locationsMethods = {
 
     grid.innerHTML = '';
     grid.className = 'locations-grid';
+    const countEl = document.getElementById('locations-result-count');
+    if (countEl) countEl.textContent = `${filtered.length} location${filtered.length !== 1 ? 's' : ''}`;
     filtered.forEach(({ id, data }) => {
       const card = document.createElement('div');
       card.className = 'location-card';
