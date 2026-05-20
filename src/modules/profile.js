@@ -6,6 +6,13 @@ export const profileMethods = {
     document.getElementById(hideId)?.classList.add('hidden');
   },
 
+  switchProfileTab(btn, tabId) {
+    document.querySelectorAll('.profile-tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.profile-tab-pane').forEach(p => p.classList.add('hidden'));
+    btn.classList.add('active');
+    document.getElementById(tabId)?.classList.remove('hidden');
+  },
+
   async loadProfile(userId = null) {
     const content = document.getElementById('profile-content');
     if (!content) return;
@@ -37,12 +44,30 @@ export const profileMethods = {
       const avatar = ud.photoURL || null;
       const bio = ud.bio || '';
       const joined = ud.createdAt ? new Date(ud.createdAt.toDate()).toLocaleDateString() : 'Recently';
+      const city = ud.city || '';
+      const specialty = ud.specialty || '';
+      const gear = ud.gear || '';
+      const pronouns = ud.pronouns || '';
 
+      // --- Overview tab ---
       const bioHtml = bio
         ? `<p class="cz-text text-dim">${this.escapeHtml(bio)}</p>`
         : `<p class="cz-text text-muted text-italic">${isOwn ? 'Add a short field note so others know your style.' : 'No bio shared yet.'}</p>`;
 
-      const highlights = locs.slice(0, 6).map(loc => {
+      const metaFields = [
+        city      && `<div class="profile-meta-field"><span class="profile-meta-label"><i class="fas fa-map-marker-alt"></i> City</span><span>${this.escapeHtml(city)}</span></div>`,
+        specialty && `<div class="profile-meta-field"><span class="profile-meta-label"><i class="fas fa-crosshairs"></i> Specialty</span><span>${this.escapeHtml(specialty)}</span></div>`,
+        gear      && `<div class="profile-meta-field"><span class="profile-meta-label"><i class="fas fa-toolbox"></i> Gear</span><span>${this.escapeHtml(gear)}</span></div>`,
+        pronouns  && `<div class="profile-meta-field"><span class="profile-meta-label"><i class="fas fa-user"></i> Pronouns</span><span>${this.escapeHtml(pronouns)}</span></div>`,
+      ].filter(Boolean).join('');
+
+      const safeLinks = (Array.isArray(ud.links) ? ud.links.filter(Boolean) : []).filter(l => /^https?:\/\//i.test(l));
+      const linksHtml = safeLinks.length
+        ? safeLinks.map(l => `<a class="btn w-fit" href="${this.escapeHtml(l)}" target="_blank" rel="noopener noreferrer"><i class="fas fa-external-link-alt"></i> ${this.escapeHtml(l.replace(/^https?:\/\//, '').substring(0, 40))}</a>`).join('')
+        : `<div class="text-muted text-italic">No links shared.</div>`;
+
+      // --- Spots tab ---
+      const highlights = locs.slice(0, 12).map(loc => {
         const desc = typeof loc.description === 'string' ? loc.description : '';
         const risk = loc.riskLevel || 'unknown';
         return `<div class="profile-highlight" onclick="app.showLocationDetailModal('${loc.id}')" title="View details">
@@ -57,9 +82,10 @@ export const profileMethods = {
             <span class="profile-highlight-meta"><i class="fas fa-heart"></i> ${loc.likesCount || 0}</span>
           </div>
         </div>`;
-      }).join('') || `<div class="profile-highlight empty-state">${isOwn ? 'No locations yet. Drop your first spot from the map.' : 'No locations to display yet.'}</div>`;
+      }).join('') || `<div class="empty-state">${isOwn ? 'No locations yet. Drop your first spot from the map.' : 'No locations to display yet.'}</div>`;
 
-      const timelineLimit = 6;
+      // --- Activity tab ---
+      const timelineLimit = 10;
       const timeline = locs.slice(0, timelineLimit).map(loc => {
         const desc = typeof loc.description === 'string' ? loc.description : '';
         const ts = loc.createdAt?.toDate ? this.timeAgo(loc.createdAt.toDate()) : 'Recently';
@@ -76,13 +102,11 @@ export const profileMethods = {
         ? `<li class="timeline-more"><button class="btn btn-sm" onclick="app.viewUserLocations('${targetId}')"><i class="fas fa-list"></i> +${total - timelineLimit} more</button></li>`
         : '';
 
-      const safeLinks = (Array.isArray(ud.links) ? ud.links.filter(Boolean) : []).filter(l => /^https?:\/\//i.test(l));
-      const linksHtml = safeLinks.length
-        ? safeLinks.map(l => `<a class="btn w-fit" href="${this.escapeHtml(l)}" target="_blank" rel="noopener noreferrer"><i class="fas fa-external-link-alt"></i> ${this.escapeHtml(l.replace(/^https?:\/\//, '').substring(0, 40))}</a>`).join('')
-        : `<div class="text-muted text-italic">No links shared.</div>`;
-
+      // --- Gallery in Overview ---
       const gallery = (Array.isArray(ud.gallery) ? ud.gallery.filter(Boolean) : []);
-      const galleryHtml = gallery.length ? `<div class="gallery-grid">${gallery.map(s => `<div class="gallery-item"><img src="${this.escapeHtml(s)}" alt="Gallery"></div>`).join('')}</div>` : null;
+      const galleryHtml = gallery.length
+        ? `<section class="panel"><div class="panel-header">Gallery</div><div class="panel-body"><div class="gallery-grid">${gallery.map(s => `<div class="gallery-item"><img src="${this.escapeHtml(s)}" alt="Gallery"></div>`).join('')}</div></div></section>`
+        : '';
 
       content.innerHTML = `
         <div class="profile-dashboard">
@@ -97,6 +121,7 @@ export const profileMethods = {
               <div class="id-card-identity">
                 <h2 class="profile-name">${this.escapeHtml(name)}</h2>
                 <div class="profile-handle">@${this.escapeHtml(name.toLowerCase().replace(/\s/g, '_'))}</div>
+                ${pronouns ? `<div class="profile-pronouns">${this.escapeHtml(pronouns)}</div>` : ''}
                 <div class="profile-joined"><i class="fas fa-clock"></i> ${joined}</div>
               </div>
             </div>
@@ -125,56 +150,68 @@ export const profileMethods = {
             <div id="user-badges" class="achievement-grid"></div>
           </aside>
 
-          <main class="flex flex-col gap-16">
-            <section class="panel">
-              <div class="panel-header">Dossier</div>
-              <div class="panel-body">
-                ${bioHtml}
-                ${safeLinks.length ? `<div class="profile-links">${linksHtml}</div>` : ''}
-              </div>
-            </section>
+          <main class="flex flex-col gap-0">
+            <div class="profile-tabs">
+              <button class="profile-tab-btn active" onclick="app.switchProfileTab(this,'ptab-overview')">Overview</button>
+              <button class="profile-tab-btn" onclick="app.switchProfileTab(this,'ptab-spots')">Spots <span class="profile-tab-count">${total}</span></button>
+              <button class="profile-tab-btn" onclick="app.switchProfileTab(this,'ptab-activity')">Activity</button>
+              <button class="profile-tab-btn" onclick="app.switchProfileTab(this,'ptab-intel')">Intel</button>
+            </div>
 
-            ${total > 0 ? `<section class="panel">
-              <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;">
-                <span>Recent Spots</span>
-                ${total > 6 ? `<button class="btn btn-sm" onclick="app.viewUserLocations('${targetId}')"><i class="fas fa-list"></i> All ${total}</button>` : ''}
-              </div>
-              <div class="panel-body profile-highlights-body">${highlights}</div>
-            </section>` : ''}
-
-            <section class="panel">
-              <div class="panel-header">Field Log <span style="font-size:0.75em;opacity:0.6;font-weight:normal;">// locations added</span></div>
-              <div class="terminal-log"><ul class="timeline-list">${timeline}${timelineMore}</ul></div>
-            </section>
-
-            ${galleryHtml ? `<section class="panel">
-              <div class="panel-header">Gallery</div>
-              <div class="panel-body">${galleryHtml}</div>
-            </section>` : ''}
-
-            <section class="panel">
-              <div class="panel-header">Intel Feed</div>
-              <div class="panel-body">
-                <div class="intel-feed-tabs">
-                  <button class="intel-tab active" onclick="app.switchIntelTab(this,'intel-posts-pane','intel-wall-pane')">Posts</button>
-                  <button class="intel-tab" onclick="app.switchIntelTab(this,'intel-wall-pane','intel-posts-pane')">Wall</button>
+            <div id="ptab-overview" class="profile-tab-pane flex flex-col gap-16">
+              <section class="panel">
+                <div class="panel-header">Dossier</div>
+                <div class="panel-body">
+                  ${bioHtml}
+                  ${metaFields ? `<div class="profile-meta-grid mt-12">${metaFields}</div>` : ''}
+                  ${safeLinks.length ? `<div class="profile-links mt-12">${linksHtml}</div>` : ''}
                 </div>
-                <div id="intel-posts-pane">
-                  ${isOwn ? `<div class="form-group"><textarea class="textarea" id="profile-post-input" rows="2" placeholder="Drop intel..."></textarea><button class="btn btn-primary profile-submit-btn" onclick="app.submitProfilePost('${targetId}')"><i class="fas fa-paper-plane"></i> Post</button></div>` : ''}
-                  <div id="profile-posts-list"><div class="loading">Loading posts...</div></div>
+              </section>
+              ${galleryHtml}
+            </div>
+
+            <div id="ptab-spots" class="profile-tab-pane hidden flex flex-col gap-16">
+              <section class="panel">
+                <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;">
+                  <span>Locations</span>
+                  ${total > 12 ? `<button class="btn btn-sm" onclick="app.viewUserLocations('${targetId}')"><i class="fas fa-list"></i> All ${total}</button>` : ''}
                 </div>
-                <div id="intel-wall-pane" class="hidden">
-                  ${this.currentUser
-                    ? `<div class="form-group">
-                        <textarea class="textarea" id="profile-comment-input" rows="2" placeholder="${isOwn ? 'Pin a note to your wall...' : 'Leave a note for this explorer...'}"></textarea>
-                        <button class="btn btn-primary profile-submit-btn" onclick="app.submitProfileComment('${targetId}')"><i class="fas fa-thumbtack"></i> Post Note</button>
-                      </div>`
-                    : `<p class="text-muted mb-12">Sign in to leave a note.</p>`
-                  }
-                  <div id="profile-comments-list"><div class="loading">Loading...</div></div>
+                <div class="panel-body profile-highlights-body">${highlights}</div>
+              </section>
+            </div>
+
+            <div id="ptab-activity" class="profile-tab-pane hidden flex flex-col gap-16">
+              <section class="panel">
+                <div class="panel-header">Field Log <span style="font-size:0.75em;opacity:0.6;font-weight:normal;">// locations added</span></div>
+                <div class="terminal-log"><ul class="timeline-list">${timeline}${timelineMore}</ul></div>
+              </section>
+            </div>
+
+            <div id="ptab-intel" class="profile-tab-pane hidden flex flex-col gap-16">
+              <section class="panel">
+                <div class="panel-header">Intel Feed</div>
+                <div class="panel-body">
+                  <div class="intel-feed-tabs">
+                    <button class="intel-tab active" onclick="app.switchIntelTab(this,'intel-posts-pane','intel-wall-pane')">Posts</button>
+                    <button class="intel-tab" onclick="app.switchIntelTab(this,'intel-wall-pane','intel-posts-pane')">Wall</button>
+                  </div>
+                  <div id="intel-posts-pane">
+                    ${isOwn ? `<div class="form-group"><textarea class="textarea" id="profile-post-input" rows="2" placeholder="Drop intel..."></textarea><button class="btn btn-primary profile-submit-btn" onclick="app.submitProfilePost('${targetId}')"><i class="fas fa-paper-plane"></i> Post</button></div>` : ''}
+                    <div id="profile-posts-list"><div class="loading">Loading posts...</div></div>
+                  </div>
+                  <div id="intel-wall-pane" class="hidden">
+                    ${this.currentUser
+                      ? `<div class="form-group">
+                          <textarea class="textarea" id="profile-comment-input" rows="2" placeholder="${isOwn ? 'Pin a note to your wall...' : 'Leave a note for this explorer...'}"></textarea>
+                          <button class="btn btn-primary profile-submit-btn" onclick="app.submitProfileComment('${targetId}')"><i class="fas fa-thumbtack"></i> Post Note</button>
+                        </div>`
+                      : `<p class="text-muted mb-12">Sign in to leave a note.</p>`
+                    }
+                    <div id="profile-comments-list"><div class="loading">Loading...</div></div>
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
+            </div>
           </main>
         </div>`;
 
@@ -189,36 +226,125 @@ export const profileMethods = {
     if (!this.currentUser) { this.showToast('Please sign in first', 'warning'); return; }
     const modal = document.getElementById('edit-profile-modal');
     if (!modal) return;
+    this._pendingPhotoFile = null;
+    this._pendingGalleryFiles = [];
     this.db.collection('users').doc(this.currentUser.uid).get().then(doc => {
       const d = doc.exists ? doc.data() : {};
       document.getElementById('profile-display-name').value = d.displayName || '';
       document.getElementById('profile-bio').value = d.bio || '';
-      document.getElementById('profile-photo-url').value = d.photoURL || '';
+      document.getElementById('profile-city').value = d.city || '';
+      document.getElementById('profile-specialty').value = d.specialty || '';
+      document.getElementById('profile-gear').value = d.gear || '';
+      document.getElementById('profile-pronouns').value = d.pronouns || '';
       document.getElementById('profile-links').value = (d.links || []).join('\n');
-      document.getElementById('profile-gallery').value = (d.gallery || []).join('\n');
+      // show current photo preview
+      const photoPreview = document.getElementById('profile-photo-preview');
+      if (photoPreview) {
+        if (d.photoURL) {
+          photoPreview.innerHTML = `<img src="${this.escapeHtml(d.photoURL)}" alt="Current photo">`;
+        } else {
+          photoPreview.innerHTML = '';
+        }
+      }
+      // show current gallery
+      this._currentGalleryUrls = Array.isArray(d.gallery) ? d.gallery.filter(Boolean) : [];
+      this._renderEditGallery();
     }).catch(() => {});
+    // switch to first tab
+    const firstTab = modal.querySelector('.edit-tab-btn');
+    const firstPane = modal.querySelector('.edit-tab-pane');
+    if (firstTab && firstPane) {
+      modal.querySelectorAll('.edit-tab-btn').forEach(b => b.classList.remove('active'));
+      modal.querySelectorAll('.edit-tab-pane').forEach(p => p.classList.add('hidden'));
+      firstTab.classList.add('active');
+      firstPane.classList.remove('hidden');
+    }
     modal.classList.add('active'); modal.setAttribute('aria-hidden', 'false');
     setTimeout(() => document.getElementById('profile-display-name')?.focus(), 100);
-    const galleryInput = document.getElementById('profile-gallery');
-    if (galleryInput && !galleryInput._previewBound) {
-      galleryInput._previewBound = true;
-      let t;
-      galleryInput.addEventListener('input', () => {
-        clearTimeout(t);
-        t = setTimeout(() => this._renderGalleryPreview(galleryInput.value), 400);
-      });
+
+    // wire up file inputs once
+    const photoInput = document.getElementById('profile-photo-file');
+    if (photoInput && !photoInput._bound) {
+      photoInput._bound = true;
+      photoInput.addEventListener('change', e => this._onProfilePhotoSelected(e));
+    }
+    const galleryInput = document.getElementById('profile-gallery-file');
+    if (galleryInput && !galleryInput._bound) {
+      galleryInput._bound = true;
+      galleryInput.addEventListener('change', e => this._onGalleryFilesSelected(e));
     }
   },
 
-  _renderGalleryPreview(raw) {
-    const preview = document.getElementById('profile-gallery-preview');
-    if (!preview) return;
-    const urls = raw.split(/\n+/).map(u => u.trim()).filter(u => /^https?:\/\/.+/i.test(u)).slice(0, 12);
-    if (!urls.length) { preview.innerHTML = ''; return; }
-    preview.innerHTML = urls.map(u => {
-      const safe = this.escapeHtml(u);
-      return `<img src="${safe}" alt="preview" onerror="this.outerHTML='<div class=\\'photo-preview-err\\'>bad url</div>'">`;
-    }).join('');
+  switchEditTab(btn, tabId) {
+    const modal = document.getElementById('edit-profile-modal');
+    if (!modal) return;
+    modal.querySelectorAll('.edit-tab-btn').forEach(b => b.classList.remove('active'));
+    modal.querySelectorAll('.edit-tab-pane').forEach(p => p.classList.add('hidden'));
+    btn.classList.add('active');
+    document.getElementById(tabId)?.classList.remove('hidden');
+  },
+
+  _onProfilePhotoSelected(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { this.showToast('Please select an image file', 'error'); return; }
+    if (file.size > 5 * 1024 * 1024) { this.showToast('Image must be under 5MB', 'error'); return; }
+    this._pendingPhotoFile = file;
+    const preview = document.getElementById('profile-photo-preview');
+    if (preview) {
+      const url = URL.createObjectURL(file);
+      preview.innerHTML = `<img src="${url}" alt="New photo"><div class="upload-pending-label">pending upload</div>`;
+    }
+  },
+
+  _onGalleryFilesSelected(e) {
+    const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/')).slice(0, 10);
+    if (!files.length) return;
+    this._pendingGalleryFiles = (this._pendingGalleryFiles || []).concat(files).slice(0, 10);
+    this._renderEditGallery();
+  },
+
+  _renderEditGallery() {
+    const container = document.getElementById('edit-gallery-preview');
+    if (!container) return;
+    const existing = (this._currentGalleryUrls || []).map((url, i) =>
+      `<div class="edit-gallery-thumb" data-idx="${i}">
+        <img src="${this.escapeHtml(url)}" alt="Gallery">
+        <button type="button" class="gallery-remove-btn" onclick="app._removeGalleryItem(${i},true)" title="Remove">&times;</button>
+      </div>`
+    );
+    const pending = (this._pendingGalleryFiles || []).map((f, i) => {
+      const url = URL.createObjectURL(f);
+      return `<div class="edit-gallery-thumb pending">
+        <img src="${url}" alt="Pending">
+        <button type="button" class="gallery-remove-btn" onclick="app._removeGalleryItem(${i},false)" title="Remove">&times;</button>
+        <div class="upload-pending-label">new</div>
+      </div>`;
+    });
+    container.innerHTML = existing.concat(pending).join('') || '<div class="text-muted text-sm">No images yet. Upload some to build your gallery.</div>';
+  },
+
+  _removeGalleryItem(idx, isExisting) {
+    if (isExisting) {
+      this._currentGalleryUrls = (this._currentGalleryUrls || []).filter((_, i) => i !== idx);
+    } else {
+      this._pendingGalleryFiles = (this._pendingGalleryFiles || []).filter((_, i) => i !== idx);
+    }
+    this._renderEditGallery();
+  },
+
+  async _uploadProfilePhoto(file) {
+    const ext = file.name.split('.').pop() || 'jpg';
+    const ref = this.storage.ref(`profile_photos/${this.currentUser.uid}.${ext}`);
+    const snap = await ref.put(file);
+    return snap.ref.getDownloadURL();
+  },
+
+  async _uploadGalleryFile(file, idx) {
+    const ext = file.name.split('.').pop() || 'jpg';
+    const ref = this.storage.ref(`gallery/${this.currentUser.uid}/${Date.now()}_${idx}.${ext}`);
+    const snap = await ref.put(file);
+    return snap.ref.getDownloadURL();
   },
 
   showEditProfileModal() { return this.showEditProfile(); },
@@ -226,6 +352,8 @@ export const profileMethods = {
   hideEditProfileModal() {
     const modal = document.getElementById('edit-profile-modal');
     if (modal) { modal.classList.remove('active'); modal.setAttribute('aria-hidden', 'true'); document.getElementById('edit-profile-form')?.reset(); }
+    this._pendingPhotoFile = null;
+    this._pendingGalleryFiles = [];
   },
 
   async handleEditProfile(e) {
@@ -233,18 +361,49 @@ export const profileMethods = {
     if (!this.currentUser) { this.showToast('Please sign in first', 'warning'); return; }
     const displayName = document.getElementById('profile-display-name').value.trim();
     const bio = document.getElementById('profile-bio').value.trim();
-    const photoURL = document.getElementById('profile-photo-url').value.trim();
+    const city = document.getElementById('profile-city').value.trim();
+    const specialty = document.getElementById('profile-specialty').value.trim();
+    const gear = document.getElementById('profile-gear').value.trim();
+    const pronouns = document.getElementById('profile-pronouns').value.trim();
     const links = (document.getElementById('profile-links').value || '').split(/\n+/).map(l => this.sanitizeInput(l.trim())).filter(Boolean);
-    const gallery = (document.getElementById('profile-gallery').value || '').split(/\n+/).map(l => this.sanitizeInput(l.trim())).filter(Boolean);
     const btn = document.getElementById('profile-submit-btn');
     this.setButtonLoading(btn, true, 'Saving...');
     try {
-      await this.db.collection('users').doc(this.currentUser.uid).set({ displayName: displayName || null, bio: bio || null, photoURL: photoURL || null, links, gallery, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      let photoURL = null;
+      // check if there's an existing photo (from the doc we loaded)
+      const existingDoc = await this.db.collection('users').doc(this.currentUser.uid).get();
+      photoURL = existingDoc.exists ? (existingDoc.data().photoURL || null) : null;
+
+      if (this._pendingPhotoFile) {
+        this.setButtonLoading(btn, true, 'Uploading photo...');
+        photoURL = await this._uploadProfilePhoto(this._pendingPhotoFile);
+      }
+
+      let galleryUrls = [...(this._currentGalleryUrls || [])];
+      if (this._pendingGalleryFiles?.length) {
+        this.setButtonLoading(btn, true, 'Uploading gallery...');
+        const uploaded = await Promise.all(this._pendingGalleryFiles.map((f, i) => this._uploadGalleryFile(f, i)));
+        galleryUrls = galleryUrls.concat(uploaded);
+      }
+
+      this.setButtonLoading(btn, true, 'Saving...');
+      await this.db.collection('users').doc(this.currentUser.uid).set({
+        displayName: displayName || null,
+        bio: bio || null,
+        city: city || null,
+        specialty: specialty || null,
+        gear: gear || null,
+        pronouns: pronouns || null,
+        photoURL: photoURL || null,
+        links,
+        gallery: galleryUrls,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
       if (displayName || photoURL) await this.currentUser.updateProfile({ displayName: displayName || null, photoURL: photoURL || null });
       this.hideEditProfileModal();
-      this.showToast('Profile updated successfully!', 'success');
+      this.showToast('Profile updated!', 'success');
       this.loadProfile();
-    } catch { this.showToast('Failed to update profile. Please try again.', 'error'); }
+    } catch (err) { this.showToast('Failed to update profile: ' + err.message, 'error'); }
     finally { this.setButtonLoading(btn, false); }
   },
 
@@ -258,17 +417,10 @@ export const profileMethods = {
 
       let likes = 0, visits = 0;
       if (locations.length) {
-        locations.forEach(loc => {
-          likes += loc.likesCount || 0;
-          visits += loc.visitCount || 0;
-        });
+        locations.forEach(loc => { likes += loc.likesCount || 0; visits += loc.visitCount || 0; });
       } else {
         const locsSnap = await this.db.collection('locations').where('createdBy', '==', userId).where('status', '==', 'active').get();
-        locsSnap.forEach(doc => {
-          const d = doc.data();
-          likes += d.likesCount || 0;
-          visits += d.visitCount || 0;
-        });
+        locsSnap.forEach(doc => { const d = doc.data(); likes += d.likesCount || 0; visits += d.visitCount || 0; });
       }
 
       const set = id => document.getElementById(id);
@@ -284,10 +436,7 @@ export const profileMethods = {
   renderUserBadges(badges) {
     const container = document.getElementById('user-badges');
     if (!container) return;
-    if (!badges.length) {
-      container.innerHTML = '<div class="activity-time">NO BADGES YET</div>';
-      return;
-    }
+    if (!badges.length) { container.innerHTML = '<div class="activity-time">NO BADGES YET</div>'; return; }
     const icons = { first_location:'fas fa-map-marker-alt', mapper_10:'fas fa-map', mapper_50:'fas fa-globe', first_visit:'fas fa-check-circle', explorer_10:'fas fa-shoe-prints', explorer_50:'fas fa-trophy', commentator:'fas fa-comment', social_butterfly:'fas fa-users', photographer:'fas fa-camera' };
     container.innerHTML = badges.map(b => {
       const icon = icons[b.badgeId] || 'fas fa-medal';

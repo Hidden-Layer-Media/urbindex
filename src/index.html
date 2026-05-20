@@ -408,39 +408,97 @@
 
 <!-- Edit Profile Modal -->
 <div id="edit-profile-modal" class="modal-overlay" onclick="if(event.target===this)app.hideEditProfileModal()">
-  <div class="modal modal-terminal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+  <div class="modal modal-terminal modal-wide" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
     <div class="modal-titlebar">
       <div class="modal-titlebar-dots"><span></span><span></span><span></span></div>
       <span class="modal-titlebar-text">URBINDEX :: EDIT IDENTITY</span>
       <button class="modal-titlebar-close" onclick="app.hideEditProfileModal()" aria-label="Close">[X]</button>
     </div>
     <div class="modal-scanline"></div>
-    <form id="edit-profile-form" class="modal-body-padded">
-      <div class="modal-section-label">Identity</div>
-      <div class="form-group">
-        <label class="form-label" for="profile-display-name">Display Name</label>
-        <input class="input" type="text" id="profile-display-name" maxlength="50" placeholder="Your handle">
+    <form id="edit-profile-form">
+      <div class="edit-modal-tabs">
+        <button type="button" class="edit-tab-btn active" onclick="app.switchEditTab(this,'etab-identity')">Identity</button>
+        <button type="button" class="edit-tab-btn" onclick="app.switchEditTab(this,'etab-photo')">Photo</button>
+        <button type="button" class="edit-tab-btn" onclick="app.switchEditTab(this,'etab-links')">Links</button>
+        <button type="button" class="edit-tab-btn" onclick="app.switchEditTab(this,'etab-gallery')">Gallery</button>
       </div>
-      <div class="form-group">
-        <label class="form-label" for="profile-bio">Bio</label>
-        <textarea class="textarea" id="profile-bio" rows="3" maxlength="300" placeholder="Tell the network about yourself..."></textarea>
+
+      <!-- Identity tab -->
+      <div id="etab-identity" class="edit-tab-pane modal-body-padded">
+        <div class="form-group">
+          <label class="form-label" for="profile-display-name">Display Name</label>
+          <input class="input" type="text" id="profile-display-name" maxlength="50" placeholder="Your handle">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="profile-pronouns">Pronouns</label>
+          <input class="input" type="text" id="profile-pronouns" maxlength="20" placeholder="they/them, she/her, he/him...">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="profile-bio">Bio</label>
+          <textarea class="textarea" id="profile-bio" rows="3" maxlength="300" placeholder="Tell the network about yourself..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="profile-city">City / Region</label>
+            <input class="input" type="text" id="profile-city" maxlength="60" placeholder="Detroit, MI">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="profile-specialty">Specialty</label>
+            <select class="input" id="profile-specialty">
+              <option value="">-- select --</option>
+              <option value="rooftops">Rooftops</option>
+              <option value="drains">Drains / Storm</option>
+              <option value="abandoned">Abandoned Buildings</option>
+              <option value="industrial">Industrial</option>
+              <option value="tunnels">Tunnels</option>
+              <option value="transit">Transit / Rail</option>
+              <option value="underground">Underground</option>
+              <option value="bridges">Bridges</option>
+              <option value="general">General</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="profile-gear">Gear / Kit</label>
+          <input class="input" type="text" id="profile-gear" maxlength="120" placeholder="Sony A7, headlamp, gas mask...">
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label" for="profile-photo-url">Profile Photo URL</label>
-        <input class="input" type="url" id="profile-photo-url" placeholder="https://...">
+
+      <!-- Photo tab -->
+      <div id="etab-photo" class="edit-tab-pane modal-body-padded hidden">
+        <div class="upload-zone">
+          <div id="profile-photo-preview" class="upload-photo-preview"></div>
+          <div class="upload-zone-actions">
+            <input type="file" id="profile-photo-file" accept="image/*" style="display:none">
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('profile-photo-file').click()">
+              <i class="fas fa-upload"></i> Upload Photo
+            </button>
+            <span class="upload-hint">JPG, PNG, GIF &mdash; max 5MB</span>
+          </div>
+        </div>
       </div>
-      <div class="modal-section-label">Links</div>
-      <div class="form-group">
-        <label class="form-label" for="profile-links">URLs (one per line)</label>
-        <textarea class="textarea" id="profile-links" rows="3" placeholder="https://..."></textarea>
+
+      <!-- Links tab -->
+      <div id="etab-links" class="edit-tab-pane modal-body-padded hidden">
+        <div class="form-group">
+          <label class="form-label" for="profile-links">Links <span class="form-label-hint">one per line</span></label>
+          <textarea class="textarea" id="profile-links" rows="6" placeholder="https://instagram.com/yourhandle&#10;https://yoursite.com&#10;https://twitter.com/..."></textarea>
+        </div>
       </div>
-      <div class="modal-section-label">Gallery</div>
-      <div class="form-group">
-        <label class="form-label" for="profile-gallery">Image URLs (one per line)</label>
-        <textarea class="textarea" id="profile-gallery" rows="3" placeholder="https://..."></textarea>
-        <div id="profile-gallery-preview" class="photo-url-preview"></div>
+
+      <!-- Gallery tab -->
+      <div id="etab-gallery" class="edit-tab-pane modal-body-padded hidden">
+        <div class="upload-zone-row">
+          <input type="file" id="profile-gallery-file" accept="image/*" multiple style="display:none">
+          <button type="button" class="btn btn-primary" onclick="document.getElementById('profile-gallery-file').click()">
+            <i class="fas fa-images"></i> Add Images
+          </button>
+          <span class="upload-hint">Select multiple images at once &mdash; max 10 total</span>
+        </div>
+        <div id="edit-gallery-preview" class="edit-gallery-grid mt-12"></div>
       </div>
-      <div class="flex gap-8 mt-12">
+
+      <div class="edit-modal-footer">
         <button type="button" class="btn" onclick="app.hideEditProfileModal()">Cancel</button>
         <button type="submit" class="btn btn-primary" id="profile-submit-btn"><i class="fas fa-save"></i> Save Changes</button>
       </div>

@@ -742,6 +742,262 @@ select.input {
 }
 
 /* ══════════════════════════════════════
+   PROFILE PAGE TABS
+══════════════════════════════════════ */
+.profile-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--black-panel);
+  margin-bottom: 16px;
+  gap: 0;
+}
+
+.profile-tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-tab-btn:hover { color: var(--text-dim); }
+
+.profile-tab-btn.active {
+  color: var(--yellow);
+  border-bottom-color: var(--yellow);
+}
+
+.profile-tab-count {
+  background: var(--yellow);
+  color: var(--black);
+  font-size: 9px;
+  font-weight: 900;
+  padding: 1px 5px;
+  min-width: 16px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.profile-tab-pane { min-height: 120px; }
+
+/* Profile meta fields (city, specialty, gear, pronouns) */
+.profile-meta-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profile-meta-field {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.profile-meta-label {
+  color: var(--text-muted);
+  font-size: 10px;
+  letter-spacing: 1px;
+  min-width: 90px;
+  flex-shrink: 0;
+}
+
+.profile-meta-label i {
+  color: var(--yellow-muted);
+  width: 12px;
+  margin-right: 4px;
+}
+
+.profile-pronouns {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+
+/* ══════════════════════════════════════
+   EDIT PROFILE MODAL TABS
+══════════════════════════════════════ */
+.edit-modal-tabs {
+  display: flex;
+  background: var(--black);
+  border-bottom: 1px solid var(--border);
+  gap: 0;
+}
+
+.edit-tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 9px 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: var(--transition);
+}
+
+.edit-tab-btn:hover { color: var(--text-dim); }
+
+.edit-tab-btn.active {
+  color: var(--yellow);
+  border-bottom-color: var(--yellow);
+}
+
+.edit-tab-pane { min-height: 180px; }
+
+.edit-modal-footer {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--black);
+  justify-content: flex-end;
+}
+
+/* form-row: two inputs side-by-side */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.form-label-hint {
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  margin-left: 6px;
+  font-weight: 400;
+}
+
+/* Upload zones */
+.upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 0;
+}
+
+.upload-zone-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.upload-zone-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  font-family: var(--font-mono);
+}
+
+.upload-photo-preview {
+  width: 100px;
+  height: 100px;
+  border: 1px solid var(--border);
+  background: var(--black-raised);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.upload-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.upload-pending-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--yellow);
+  color: var(--black);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-align: center;
+  padding: 2px 0;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+
+/* Gallery edit grid */
+.edit-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 8px;
+}
+
+.edit-gallery-thumb {
+  position: relative;
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--black-raised);
+}
+
+.edit-gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.edit-gallery-thumb.pending { border-color: var(--yellow); }
+
+.gallery-remove-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: rgba(0,0,0,0.8);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-family: var(--font-mono);
+  transition: var(--transition);
+}
+
+.gallery-remove-btn:hover { background: var(--red, #ff3333); color: var(--black); border-color: var(--red, #ff3333); }
+
+/* ══════════════════════════════════════
    MODAL TERMINAL TITLEBAR
 ══════════════════════════════════════ */
 .modal-terminal {
@@ -2775,6 +3031,9 @@ select.select:focus {
   .social-grid { grid-template-columns: 1fr; }
   .social-hero { flex-direction: column; }
   .social-hero-actions { align-items: flex-start; }
+  .form-row { grid-template-columns: 1fr; }
+  .profile-tabs { overflow-x: auto; }
+  .edit-modal-tabs { overflow-x: auto; }
 }
 
 /* ══════════════════════════════════════

@@ -24,41 +24,50 @@ BE GOOD!!
 
 ## Features
 
-### Core Features
-- **Interactive Map** - Real-time location markers with Firebase sync
-- **User Authentication** - Anonymous sign-in with presence tracking
-- **Location Management** - Add, view, edit, delete locations
-- **Community Features** - Activity feed, user statistics
-- **Responsive Design** - Works on all devices
-- **Offline Support** - PWA with service worker
-- **Real-time Updates** - Live data synchronization
+### Core
+- **Interactive Map** — real-time geotagged location markers synced via Firebase, CartoDB dark tile layer
+- **User Authentication** — email/password + anonymous sign-in
+- **Location Management** — add, view, edit, delete locations; categories + risk levels
+- **PWA / Offline Support** — installable, service worker with tile + Firestore caching
+- **Real-time Updates** — live Firestore snapshot listeners on map + activity feed
 
-### New Location Features
-- **Address Geocoding** - Enter addresses and automatically find locations on the map using OpenStreetMap's Nominatim API
-- **Smart Location Detection** - Automatically detect and center map on user's actual location instead of defaulting to NYC
-- **Enhanced Coordinates System** - Set locations via address lookup, "Use My Location" button, or by clicking on the map
-- **Location Caching** - Session-based caching of user location for improved performance
-- **Cross-browser Compatibility** - Comprehensive error handling for various geolocation scenarios
-- **Fallback Intelligence** - Smart fallbacks when location detection fails (locale-based defaults)
-- **Real-time Location Feedback** - Loading indicators and user feedback during location operations
-- **Integration** - Seamless integration with existing marker and posting system
+### Profile
+- **Tabbed profile page** — Overview / Spots / Activity / Intel tabs (no more one giant scrolling wall)
+- **Customizable fields** — display name, bio, city/region, explorer specialty, gear list, pronouns, external links
+- **Photo upload** — upload a profile photo directly from your device (Firebase Storage); no URL pasting required
+- **Gallery upload** — multi-image upload for your gallery; remove individual images; all stored in Firebase Storage
+- **Field Stats sidebar** — locations, followers, following, likes, visits, badges at a glance
+
+### Social
+- **Activity feed** — real-time log of recent location additions across the network
+- **Social graph** — follow/unfollow explorers, follower/following counts
+- **Direct messages** — private threads between users
+- **Intel feed** — per-profile posts + wall comments
+- **Groups** — create and join exploration crews
+
+### Map
+- **Fast load** — map initializes instantly from cached or locale-based coords; GPS runs in background
+- **Cluster markers** — diamond-shaped pins grouped by zoom level, colored by risk level
+- **Address geocoding** — find locations by address via Nominatim
+- **Map style toggle** — dark, terrain, default tile layers
+- **Recenter** — one-click snap to your GPS position
+
+### Discovery
+- **Global search** — search locations and users simultaneously
+- **Location filters** — filter by category, risk level, tags
+- **Forum** — community discussion boards
 
 ## Tech Stack
 
-- **Frontend**: Vanilla JavaScript, CSS3, HTML5
-- **Backend**: Firebase (Firestore, Auth)
-- **Maps**: Leaflet.js
+- **Frontend**: Vanilla JS (ES6 modules), CSS3, HTML5
+- **Backend**: Firebase (Firestore, Auth, Storage)
+- **Maps**: Leaflet.js + CartoDB Dark tiles
+- **Build**: Vite + vite-plugin-pwa
 - **Icons**: Font Awesome
-- **Deployment**: Firebase Hosting
-
-## PWA Features
-
-- Installable on mobile/desktop
-- Offline functionality
-- App-like experience
-- Push notifications ready
+- **Hosting**: Firebase Hosting
 
 ---
 
-**Status**: ✅ Production Ready
-**Last Updated**: NOV 18 2025
+**Status**: production
+**Live**: https://urbindex-d69e1.web.app/
+**Last Updated**: 2026-05-20
