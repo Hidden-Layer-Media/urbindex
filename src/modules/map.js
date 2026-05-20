@@ -1,24 +1,16 @@
 export const mapMethods = {
-  initMap() {
-    const mapEl = document.getElementById('map');
-    if (!mapEl) { this.showError('Map element not found.'); return Promise.resolve(); }
-    return this.initializeMapWithLocation();
-  },
-
-  async initializeMapWithLocation() {
+  _locateUserBackground() {
+    // If we already have a fresh cached location the map was already centered there — skip
+    if (this.getCachedUserLocation()) return;
     this.showLocationIndicator('detecting', 'Detecting location...');
-    try {
-      const [lat, lng] = await this.getUserLocationWithFallbacks();
-      this.initializeMap(lat, lng);
-      this.cacheUserLocation(lat, lng);
-      this.showLocationIndicator('success', 'Location detected!');
-      setTimeout(() => this.hideLocationIndicator(), 2000);
-    } catch (err) {
-      const fb = this.getLocaleBasedFallback();
-      this.initializeMap(fb[0], fb[1]);
-      this.showLocationIndicator('fallback', 'Using default location');
-      setTimeout(() => this.hideLocationIndicator(), 3000);
-    }
+    this.getUserLocationWithFallbacks()
+      .then(([lat, lng]) => {
+        this.cacheUserLocation(lat, lng);
+        if (this.map) this.map.setView([lat, lng], 13);
+        this.showLocationIndicator('success', 'Location detected!');
+        setTimeout(() => this.hideLocationIndicator(), 2000);
+      })
+      .catch(() => this.hideLocationIndicator());
   },
 
   initializeMap(lat, lng) {
@@ -108,7 +100,7 @@ export const mapMethods = {
           const msgs = { 1: 'Location access denied.', 2: 'Location unavailable.', 3: 'Location request timed out.' };
           reject(new Error(msgs[err.code] || 'Unable to get location'));
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 },
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 },
       );
     });
   },

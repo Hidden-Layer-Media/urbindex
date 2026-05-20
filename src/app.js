@@ -43,7 +43,10 @@ class UrbindexApp {
 
   async init() {
     try {
-      const mapReady = this.initMap();
+      // Initialize map immediately with cached or default coords — don't wait for GPS
+      const defaultCoords = this.getCachedUserLocation() || this.getLocaleBasedFallback();
+      this.initializeMap(defaultCoords[0], defaultCoords[1]);
+
       this.initUI();
       this.initTagSystem();
       this.initRateLimiting();
@@ -51,14 +54,15 @@ class UrbindexApp {
       await this.initFirebase();
       this.initAuth();
 
-      // hide loading screen after 1.5s — independent of geolocation/map timing
-      setTimeout(() => {
-        const ls = document.getElementById('loading-screen');
-        if (ls) { ls.classList.add('loading-fade'); setTimeout(() => ls.classList.add('hidden'), 500); }
-      }, 1500);
-
-      await mapReady;
+      // Start loading data right away — map is already ready
       this.loadData();
+
+      // Locate user in the background and pan map when found
+      this._locateUserBackground();
+
+      // Hide loading screen as soon as Firebase + map are ready (~800ms)
+      const ls = document.getElementById('loading-screen');
+      if (ls) { ls.classList.add('loading-fade'); setTimeout(() => ls.classList.add('hidden'), 500); }
 
       const logoTag = document.querySelector('.logo-tag');
       if (logoTag) this.typeWriter(logoTag, '// urban exploration network', 40);

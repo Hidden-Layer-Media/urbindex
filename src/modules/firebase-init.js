@@ -24,8 +24,7 @@ export const firebaseMethods = {
     } catch (error) {
       throw new Error('Failed to initialize Firebase: ' + error.message);
     }
-    try {
-      await this.db.enablePersistence({ synchronizeTabs: true });
-    } catch {}
+    // fire-and-forget — persistence is a nice-to-have, not startup-critical
+    this.db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
   },
 };
