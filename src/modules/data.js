@@ -26,7 +26,7 @@ export const dataMethods = {
     }
 
     this.unsubLocations?.();
-    this.unsubLocations = this.db.collection('locations').where('status', '==', 'active').orderBy('createdAt', 'desc').onSnapshot(snap => {
+    this.unsubLocations = this.db.collection('locations').where('status', '==', 'active').onSnapshot(snap => {
       this.markerClusterGroup?.clearLayers();
       this.markers.clear();
       const valid = [];

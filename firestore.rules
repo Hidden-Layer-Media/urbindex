@@ -20,10 +20,6 @@ service cloud.firestore {
       return name.size() >= 2 && name.size() <= 50;
     }
     
-    function isValidPassword(password) {
-      return password.size() >= 8 && password.size() <= 128;
-    }
-    
     // Rate limiting collection
     match /rate_limits/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
@@ -165,15 +161,6 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
     
-    // Crews - authenticated users can read all crews
-    // Users can only create, update, or delete crews they own
-    match /crews/{crewId} {
-      allow read: if true; // Allow public access to view crews
-      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.ownerId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
-    }
-    
     // Crew members - authenticated users can read all crew members
     // Users can only create, update, or delete their own crew membership
     match /crewMembers/{membershipId} {
@@ -291,11 +278,12 @@ service cloud.firestore {
     // Direct messages - users can only read/write messages they're part of
     match /direct_messages/{messageId} {
       allow read: if request.auth != null &&
-        (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
-      allow create: if request.auth != null && request.resource.data.senderId == request.auth.uid;
-      allow update: if request.auth != null && request.resource.data.senderId == request.auth.uid;
+        (resource.data.fromUserId == request.auth.uid || resource.data.toUserId == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.fromUserId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.toUserId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
       allow delete: if request.auth != null &&
-        (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+        (resource.data.fromUserId == request.auth.uid || resource.data.toUserId == request.auth.uid);
     }
 
     // User messages - simple messaging system
@@ -308,12 +296,26 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.fromUserId == request.auth.uid;
     }
 
-    // Crew/Groups
-    match /crews/{crewId} {
+    // Post comments - for social feed post comments
+    match /post_comments/{commentId} {
       allow read: if true;
-      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.ownerId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Profile posts - for user profile walls
+    match /profile_posts/{postId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
+      allow update: if request.auth != null && resource.data.createdBy == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+    }
+
+    // User settings - users can only read/write their own settings
+    match /user_settings/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
 
     // User XP & Level (read-only for public, restricted write)
