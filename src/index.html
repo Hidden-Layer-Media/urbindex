@@ -110,12 +110,34 @@
           </div>
           <div class="panel">
             <div class="panel-header"><i class="fas fa-chart-bar"></i> Network Stats</div>
-            <div class="panel-body">
-              <div class="sidebar-stats-grid">
-                <div class="sidebar-stat-cell"><div class="stat-value sidebar-stat-val" id="total-locations">0</div><div class="stat-label">Locations</div></div>
-                <div class="sidebar-stat-cell"><div class="stat-value sidebar-stat-val" id="active-users">0</div><div class="stat-label">Explorers</div></div>
-                <div class="sidebar-stat-cell sidebar-stat-cell-wide"><div class="stat-value sidebar-stat-val" id="new-today-count">0</div><div class="stat-label">New Today</div></div>
+            <div class="net-stat-list">
+              <div class="net-stat-row">
+                <span class="net-stat-label"><i class="fas fa-map-marker-alt"></i> locations</span>
+                <span class="net-stat-val" id="total-locations">0</span>
               </div>
+              <div class="net-stat-row">
+                <span class="net-stat-label"><i class="fas fa-user"></i> explorers</span>
+                <span class="net-stat-val" id="active-users">0</span>
+              </div>
+              <div class="net-stat-row">
+                <span class="net-stat-label"><i class="fas fa-bolt"></i> new today</span>
+                <span class="net-stat-val" id="new-today-count">0</span>
+              </div>
+            </div>
+          </div>
+          <div class="panel area-ops-panel">
+            <div class="panel-header"><i class="fas fa-crosshairs"></i> Area Ops</div>
+            <div class="area-ops-body">
+              <div class="area-pos-row" id="area-pos-row">
+                <span class="area-pos-label"><i class="fas fa-satellite-dish"></i> position</span>
+                <span class="area-pos-coords" id="area-coords">-- no fix --</span>
+              </div>
+              <button class="btn area-ops-locate-btn" id="area-ops-locate" onclick="app.areaOpsLocate()">
+                <i class="fas fa-location-arrow"></i> acquire gps
+              </button>
+              <button class="btn btn-primary area-ops-pin-btn" onclick="app.showAddLocationModal()">
+                <i class="fas fa-map-marker-alt"></i> drop pin here
+              </button>
             </div>
           </div>
         </aside>
@@ -139,24 +161,41 @@
           <button class="btn btn-primary btn-sm" onclick="app.showAddLocationModal()"><i class="fas fa-plus"></i> Add</button>
         </div>
       </div>
-      <div class="filter-row">
-        <input class="input filter-search" type="text" id="location-search" placeholder="Search...">
-        <select class="input select-auto" id="category-filter">
-          <option value="">All Categories</option>
-          <option>abandoned</option><option>industrial</option><option>infrastructure</option>
-          <option>nature</option><option>underground</option><option>rooftop</option>
-          <option>historical</option><option>other</option>
-        </select>
-        <select class="input select-auto" id="risk-filter">
-          <option value="">All Risk</option>
-          <option>safe</option><option>low</option><option>medium</option><option>high</option><option>extreme</option>
-        </select>
-        <select class="input select-auto" id="sort-filter">
-          <option value="recent">Recent</option>
-          <option value="name">Name</option>
-          <option value="risk">Risk</option>
-          <option value="score">Score</option>
-        </select>
+      <div class="filter-panel">
+        <div class="filter-panel-header"><i class="fas fa-sliders-h"></i> filter ops</div>
+        <div class="filter-panel-body">
+          <div class="filter-search-wrap">
+            <span class="filter-prompt">$</span>
+            <input class="input filter-search-input" type="text" id="location-search" placeholder="search locations...">
+          </div>
+          <div class="filter-selects">
+            <div class="filter-select-wrap">
+              <i class="fas fa-tag filter-select-icon"></i>
+              <select class="input select-auto" id="category-filter">
+                <option value="">All Categories</option>
+                <option>abandoned</option><option>industrial</option><option>infrastructure</option>
+                <option>nature</option><option>underground</option><option>rooftop</option>
+                <option>historical</option><option>other</option>
+              </select>
+            </div>
+            <div class="filter-select-wrap">
+              <i class="fas fa-radiation-alt filter-select-icon"></i>
+              <select class="input select-auto" id="risk-filter">
+                <option value="">All Risk</option>
+                <option>safe</option><option>low</option><option>medium</option><option>high</option><option>extreme</option>
+              </select>
+            </div>
+            <div class="filter-select-wrap">
+              <i class="fas fa-sort-amount-down filter-select-icon"></i>
+              <select class="input select-auto" id="sort-filter">
+                <option value="recent">Recent</option>
+                <option value="name">Name</option>
+                <option value="risk">Risk</option>
+                <option value="score">Score</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
       <div id="locations-grid"></div>
     </div>
@@ -390,17 +429,29 @@
 
 <!-- Password Reset Modal -->
 <div id="password-reset-modal" class="modal-overlay" onclick="if(event.target===this)app.hidePasswordResetModal()">
-  <div class="modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
-    <button class="modal-close" onclick="app.hidePasswordResetModal()" aria-label="Close">&times;</button>
-    <div class="modal-header"><h3>// Password Reset</h3></div>
-    <form id="password-reset-form">
-      <div class="form-group">
-        <label class="form-label" for="reset-email">Email Address</label>
-        <input class="input" type="email" id="reset-email" required placeholder="user@example.com">
+  <div class="modal modal-terminal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+    <div class="modal-titlebar">
+      <div class="modal-titlebar-dots"><span></span><span></span><span></span></div>
+      <span class="modal-titlebar-text">URBINDEX :: PASSKEY RESET</span>
+      <button class="modal-titlebar-close" onclick="app.hidePasswordResetModal()" aria-label="Close">[X]</button>
+    </div>
+    <div class="modal-scanline"></div>
+    <form id="password-reset-form" class="modal-body-padded">
+      <div class="auth-prompt-line">
+        <span class="auth-prompt-label">URBINDEX://reset</span>
+        <span class="auth-blink">_</span>
       </div>
-      <div class="flex gap-8 mt-12">
+      <div class="form-group">
+        <label class="form-label auth-label" for="reset-email">EMAIL_ADDR:</label>
+        <div class="auth-input-wrap">
+          <span class="auth-prompt-char">&gt;</span>
+          <input class="input auth-input" type="email" id="reset-email" required placeholder="user@domain.net" autocomplete="email">
+        </div>
+      </div>
+      <div class="form-hint mb-8">// a reset link will be transmitted to this address</div>
+      <div class="flex gap-8 mt-8">
         <button type="button" class="btn" onclick="app.hidePasswordResetModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send Reset Link</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Transmit</button>
       </div>
     </form>
   </div>

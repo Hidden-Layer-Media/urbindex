@@ -108,9 +108,9 @@
 .nav {
   background: var(--black-panel);
   border-bottom: 1px solid var(--border);
-  padding: 0 16px;
+  padding: 0 14px;
   display: flex;
-  gap: 2px;
+  gap: 0;
   position: sticky;
   top: 48px;
   z-index: 90;
@@ -122,16 +122,16 @@
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--text-muted);
-  padding: 10px 14px;
+  padding: 9px 13px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
   white-space: nowrap;
   transition: var(--transition);
   position: relative;
@@ -169,7 +169,7 @@
 /* ── Main content ── */
 .main {
   flex: 1;
-  padding: 16px;
+  padding: 10px 14px;
   max-width: 1440px;
   margin: 0 auto;
   width: 100%;
@@ -181,17 +181,18 @@
 /* ── Map layout ── */
 .map-layout {
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 12px;
-  height: calc(100vh - 130px);
+  grid-template-columns: 272px 1fr;
+  gap: 8px;
+  height: calc(100vh - 122px);
   min-height: 480px;
 }
 
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* ── Panel ── */
@@ -210,11 +211,11 @@
   background: var(--black-raised);
   border-bottom: 1px solid var(--border);
   border-left: 3px solid var(--yellow);
-  padding: 8px 12px;
+  padding: 6px 10px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 11px;
+  gap: 6px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 3px;
@@ -229,7 +230,7 @@
 }
 
 .panel-body {
-  padding: 12px;
+  padding: 8px 10px;
 }
 
 /* ── Map container ── */
@@ -258,7 +259,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px 8px;
+  padding: 7px 12px 6px;
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
 }
@@ -327,7 +328,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
+  padding: 6px 12px;
   flex-wrap: wrap;
 }
 

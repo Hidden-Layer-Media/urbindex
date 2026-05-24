@@ -162,6 +162,33 @@ export const uiMethods = {
     if (addrInput) {
       addrInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); this.handleAddressLookup(); } });
     }
+    this.initAreaOpsPanel();
+  },
+
+  initAreaOpsPanel() {
+    const cached = this.getCachedUserLocation?.();
+    if (cached) this._setAreaOpsCoords(cached[0], cached[1]);
+  },
+
+  async areaOpsLocate() {
+    const btn = document.getElementById('area-ops-locate');
+    const coordEl = document.getElementById('area-coords');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> acquiring...'; }
+    if (coordEl) coordEl.textContent = '-- scanning --';
+    try {
+      const [lat, lng] = await this.getUserLocation();
+      this._setAreaOpsCoords(lat, lng);
+      this.map?.setView([lat, lng], 15);
+    } catch (err) {
+      if (coordEl) coordEl.textContent = '-- denied --';
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-location-arrow"></i> acquire gps'; }
+    }
+  },
+
+  _setAreaOpsCoords(lat, lng) {
+    const el = document.getElementById('area-coords');
+    if (el) el.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
   },
 
 };

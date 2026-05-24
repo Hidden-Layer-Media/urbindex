@@ -436,7 +436,7 @@ export const profileMethods = {
   renderUserBadges(badges) {
     const container = document.getElementById('user-badges');
     if (!container) return;
-    if (!badges.length) { container.innerHTML = '<div class="activity-time">NO BADGES YET</div>'; return; }
+    if (!badges.length) { container.innerHTML = '<div class="text-muted">NO BADGES YET</div>'; return; }
     const icons = { first_location:'fas fa-map-marker-alt', mapper_10:'fas fa-map', mapper_50:'fas fa-globe', first_visit:'fas fa-check-circle', explorer_10:'fas fa-shoe-prints', explorer_50:'fas fa-trophy', commentator:'fas fa-comment', social_butterfly:'fas fa-users', photographer:'fas fa-camera' };
     container.innerHTML = badges.map(b => {
       const icon = icons[b.badgeId] || 'fas fa-medal';

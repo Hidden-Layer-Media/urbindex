@@ -226,14 +226,17 @@ export const locationsMethods = {
     if (countEl) countEl.textContent = `${filtered.length} location${filtered.length !== 1 ? 's' : ''}`;
     filtered.forEach(({ id, data }) => {
       const card = document.createElement('div');
-      card.className = 'location-card';
+      card.className = `location-card lc-risk-${data.riskLevel || 'unknown'}`;
       const score = this.getLocationScore(data);
       const desc = data.description || '';
       const truncDesc = desc.length > 120 ? desc.substring(0, 120) + '...' : desc;
+      const catIcons = { abandoned:'fa-building', industrial:'fa-industry', infrastructure:'fa-project-diagram', nature:'fa-tree', underground:'fa-level-down-alt', rooftop:'fa-city', historical:'fa-landmark', other:'fa-tag' };
+      const catIcon = catIcons[data.category] || 'fa-tag';
       card.innerHTML = `
         <div class="location-header">
-          <h4>${this.escapeHtml(data.name)}</h4>
-          <span class="risk risk-${data.riskLevel}">${data.riskLevel}</span>
+          <span class="lc-cat-icon lc-cat-${data.category || 'other'}"><i class="fas ${catIcon}"></i></span>
+          <h4 class="lc-name">${this.escapeHtml(data.name)}</h4>
+          <span class="risk risk-${data.riskLevel || 'unknown'}">${data.riskLevel || 'unknown'}</span>
         </div>
         <p class="location-card-desc">${this.escapeHtml(truncDesc)}</p>
         <div class="location-card-meta">

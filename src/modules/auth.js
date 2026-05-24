@@ -339,7 +339,7 @@ export const authMethods = {
     const email = document.getElementById('reset-email')?.value.trim();
     if (!email) { this.showToast('Please enter your email address', 'warning'); return; }
     const btn = e.target.querySelector('button[type="submit"]');
-    const orig = btn.textContent; btn.textContent = 'Sending...'; btn.disabled = true;
+    const orig = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...'; btn.disabled = true;
     try {
       await this.auth.sendPasswordResetEmail(email);
       this.hidePasswordResetModal();
@@ -347,7 +347,7 @@ export const authMethods = {
     } catch (err) {
       const msgs = { 'auth/user-not-found': 'No account found with this email address', 'auth/invalid-email': 'Invalid email address', 'auth/too-many-requests': 'Too many requests. Please try again later.' };
       this.showToast(msgs[err.code] || err.message, 'error');
-    } finally { btn.textContent = orig; btn.disabled = false; }
+    } finally { btn.innerHTML = orig; btn.disabled = false; }
   },
 
   showPasswordResetModal() {
