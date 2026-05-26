@@ -230,7 +230,26 @@ export const locationsMethods = {
       const score = this.getLocationScore(data);
       const desc = data.description || '';
       const truncDesc = desc.length > 120 ? desc.substring(0, 120) + '...' : desc;
-      const catIcons = { abandoned:'fa-building', industrial:'fa-industry', infrastructure:'fa-project-diagram', nature:'fa-tree', underground:'fa-level-down-alt', rooftop:'fa-city', historical:'fa-landmark', other:'fa-tag' };
+      const catIcons = { 
+        abandoned:'fa-building', 
+        industrial:'fa-industry', 
+        infrastructure:'fa-project-diagram', 
+        nature:'fa-tree', 
+        underground:'fa-level-down-alt', 
+        rooftop:'fa-city', 
+        historical:'fa-landmark',
+        storage:'fa-box-open',
+        parking:'fa-parking',
+        wifi:'fa-wifi',
+        charging:'fa-bolt',
+        bathroom:'fa-restroom',
+        laundromat:'fa-soap',
+        power:'fa-plug',
+        food:'fa-utensils',
+        overnight:'fa-bed',
+        tools:'fa-tools',
+        other:'fa-tag' 
+      };
       const catIcon = catIcons[data.category] || 'fa-tag';
       card.innerHTML = `
         <div class="location-header">
@@ -454,7 +473,7 @@ export const locationsMethods = {
 
   initTagSystem() {
     this.selectedTags = new Set();
-    this.predefinedTags = ['historic','architecture','nature','underground','hidden','photo-worthy','challenging','accessible','urban','industrial','abandoned','safe','dangerous','family-friendly','night-time','day-time','rooftop','basement','warehouse','bridge','tunnel','park','waterfront'];
+    this.predefinedTags = ['historic','architecture','nature','underground','hidden','photo-worthy','challenging','accessible','urban','industrial','abandoned','safe','dangerous','family-friendly','night-time','day-time','rooftop','basement','warehouse','bridge','tunnel','park','waterfront','storage','parking','wifi','charging','bathroom','laundromat','power','food','overnight','tools'];
     this.setupTagInput();
     this.followers = new Map(); this.following = new Map(); this.likes = new Map();
     this.ratings = new Map(); this.comments = new Map(); this.profilePosts = new Map();
