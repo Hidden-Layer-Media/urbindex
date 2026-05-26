@@ -81,6 +81,8 @@ export const locationsMethods = {
       description: this.sanitizeInput(description),
       category: document.getElementById('location-category').value,
       riskLevel: document.getElementById('location-risk').value,
+      currentVibe: document.getElementById('location-status-vibe').value,
+      vibeUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       address: this.sanitizeInput(document.getElementById('location-address').value.trim()),
       tags,
       photos,
@@ -431,6 +433,8 @@ export const locationsMethods = {
         ? `<div class="detail-tags">${data.tags.map(t => `<span class="card-tag">${this.escapeHtml(t)}</span>`).join('')}</div>`
         : '';
       const date = data.createdAt ? new Date(data.createdAt.toDate?.() ?? data.createdAt).toLocaleDateString() : '';
+      const vibeDate = data.vibeUpdatedAt ? this.timeAgo(data.vibeUpdatedAt.toDate?.()) : 'unknown';
+      const vibeBadge = this.getVibeBadge(data.currentVibe);
       const coords = data.coordinates?.length === 2 ? `${data.coordinates[0].toFixed(5)}, ${data.coordinates[1].toFixed(5)}` : '';
       content.innerHTML = `
         <div class="modal-header location-detail-modal-header">
@@ -445,6 +449,25 @@ export const locationsMethods = {
         </div>
         <div class="modal-body">
           ${photosHtml}
+          
+          <div class="detail-status-section">
+            <div class="detail-section-label">// LIVE STATUS</div>
+            <div class="flex items-center gap-8 mt-4">
+              ${vibeBadge || '<span class="text-muted">No current status reported</span>'}
+              <span class="text-muted small">Updated ${vibeDate}</span>
+            </div>
+            ${this.currentUser ? `
+              <div class="status-report-bar mt-8">
+                <button class="btn btn-sm status-report-btn" onclick="app.updateLocationStatus('${locationId}', 'quiet')"><i class="fas fa-leaf"></i> Quiet</button>
+                <button class="btn btn-sm status-report-btn" onclick="app.updateLocationStatus('${locationId}', 'busy')"><i class="fas fa-users"></i> Busy</button>
+                <button class="btn btn-sm status-report-btn" onclick="app.updateLocationStatus('${locationId}', 'security')"><i class="fas fa-user-shield"></i> Security</button>
+                <button class="btn btn-sm status-report-btn" onclick="app.updateLocationStatus('${locationId}', 'police')"><i class="fas fa-radiation-alt"></i> Police</button>
+                <button class="btn btn-sm status-report-btn" onclick="app.updateLocationStatus('${locationId}', 'utility_ok')"><i class="fas fa-plug"></i> Power OK</button>
+                <button class="btn btn-sm status-report-btn" onclick="app.updateLocationStatus('${locationId}', 'utility_down')"><i class="fas fa-plug-circle-xmark"></i> Power Out</button>
+              </div>
+            ` : ''}
+          </div>
+
           <p class="location-detail-desc">${this.escapeHtml(data.description || '')}</p>
           ${tagsHtml}
           <div class="detail-stats-row">
@@ -469,6 +492,41 @@ export const locationsMethods = {
       modal.onclick = e => { if (e.target === modal) modal.classList.remove('active'); };
       this.loadLocationComments(locationId);
     }).catch(() => this.showToast('Failed to load location details', 'error'));
+  },
+
+  async updateLocationStatus(locationId, vibe) {
+    if (!this.currentUser) { this.showToast('Sign in to report status', 'warning'); return; }
+    const opKey = `status-${locationId}`;
+    if (this.activeOperations.has(opKey)) return;
+    this.activeOperations.add(opKey);
+
+    try {
+      const batch = this.db.batch();
+      const locRef = this.db.collection('locations').doc(locationId);
+      const updateRef = this.db.collection('location_status_updates').doc();
+
+      batch.update(locRef, {
+        currentVibe: vibe,
+        vibeUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      batch.set(updateRef, {
+        locationId,
+        userId: this.currentUser.uid,
+        userName: this.currentUser.displayName || 'Explorer',
+        vibe,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      await batch.commit();
+      this.showToast(`Status updated to ${vibe.replace('_', ' ')}`, 'success');
+      this.showLocationDetailModal(locationId);
+      this.updateUserXP(this.currentUser.uid, 'add_comment'); // Award minor XP for status updates
+    } catch {
+      this.showToast('Failed to update status', 'error');
+    } finally {
+      this.activeOperations.delete(opKey);
+    }
   },
 
   initTagSystem() {

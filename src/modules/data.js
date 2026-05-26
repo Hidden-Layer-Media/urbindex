@@ -67,17 +67,28 @@ export const dataMethods = {
     const name = this.escapeHtml(data.name || 'Unnamed');
     const cat = this.escapeHtml(data.category || 'unknown');
     const risk = this.escapeHtml(data.riskLevel || 'unknown');
+    const vibe = data.currentVibe || 'unknown';
+    const vibeHtml = vibe !== 'unknown' ? `<div class="vibe-badge vibe-${vibe} mt-4">${vibe.replace('_', ' ')}</div>` : '';
     return `<div class="ub-tip">
       <div class="ub-tip-name">${name}</div>
       <div class="ub-tip-meta">// ${cat} &nbsp;<span class="risk risk-${data.riskLevel || 'unknown'}">${risk}</span></div>
+      ${vibeHtml}
       <div class="ub-tip-stats"><i class="fas fa-eye"></i> ${data.visitCount || 0} &nbsp;<i class="fas fa-heart"></i> ${data.likesCount || 0}</div>
     </div>`;
+  },
+
+  getVibeBadge(vibe) {
+    if (!vibe || vibe === 'unknown') return '';
+    const icons = { quiet: 'fa-leaf', busy: 'fa-users', security: 'fa-user-shield', police: 'fa-radiat-alt', utility_ok: 'fa-plug', utility_down: 'fa-plug-circle-xmark' };
+    const icon = icons[vibe] || 'fa-info-circle';
+    return `<span class="vibe-badge vibe-${vibe}"><i class="fas ${icon}"></i> ${vibe.replace('_', ' ')}</span>`;
   },
 
   createLocationPopup(data, docId) {
     const name = this.escapeHtml(data.name || 'Unnamed Location');
     const desc = this.escapeHtml((data.description || 'No description').substring(0, 120));
     const cat = this.escapeHtml(data.category || 'other');
+    const vibeBadge = this.getVibeBadge(data.currentVibe);
     const date = data.createdAt ? new Date(data.createdAt.toDate?.() ?? data.createdAt).toLocaleDateString() : 'Unknown';
     const photos = data.photos?.length
       ? `<div class="popup-photos">${data.photos.slice(0,3).map((p,i) => `<img src="${this.escapeHtml(p)}" alt="photo" class="popup-photo" onclick="app.showLocationPhotoModal('${docId}',${i})">`).join('')}</div>`
@@ -101,6 +112,7 @@ export const dataMethods = {
         <div class="map-popup-meta">
           <span class="popup-cat-chip">${cat}</span>
           <span class="risk risk-${data.riskLevel || 'unknown'}">${data.riskLevel || 'unknown'}</span>
+          ${vibeBadge}
         </div>
         ${photos}${tags}
         <div class="popup-stats">

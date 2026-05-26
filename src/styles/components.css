@@ -248,6 +248,46 @@ select.input {
 .badge-danger  { color: var(--red-alert); }
 .badge-unknown { color: var(--text-muted); }
 
+/* Vibe/Status Badges */
+.vibe-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border: 1px solid currentColor;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.vibe-quiet    { color: var(--green-term); }
+.vibe-busy     { color: var(--blue-cold); }
+.vibe-security { color: var(--amber); border-style: dashed; }
+.vibe-police   { color: var(--red-alert); background: rgba(255, 34, 34, 0.1); }
+.vibe-utility-ok { color: var(--cyan); }
+.vibe-utility-down { color: var(--red-alert); text-decoration: line-through; }
+.vibe-unknown  { color: var(--text-muted); }
+
+.status-report-bar {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.status-report-btn {
+  font-size: 9px;
+  padding: 3px 7px;
+}
+
+.detail-status-section {
+  background: var(--black-raised);
+  border: 1px solid var(--border);
+  padding: 10px;
+  margin: 10px 0;
+  border-left: 3px solid var(--blue-cold);
+}
+
 /* ══════════════════════════════════════
    TOASTS / NOTIFICATIONS
 ══════════════════════════════════════ */
