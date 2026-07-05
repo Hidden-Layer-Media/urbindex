@@ -18,6 +18,8 @@
   transition: var(--transition);
   position: relative;
   white-space: nowrap;
+  min-height: 30px;
+  max-width: 100%;
 }
 
 .btn:hover {
@@ -486,6 +488,7 @@ select.input {
   max-width: 480px;
   max-height: 90vh;
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
 }
 
@@ -1077,6 +1080,10 @@ select.input {
   flex: 1;
   text-align: center;
   letter-spacing: 3px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .modal-titlebar-close {
@@ -2741,6 +2748,7 @@ select.select:focus {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 10px;
+  align-items: start;
 }
 
 .locations-grid .location-card {
@@ -2841,6 +2849,9 @@ select.select:focus {
 .rating-btn.active { border-color: var(--yellow); color: var(--yellow); }
 
 .location-card-desc { color: var(--text-dim); margin-bottom: 8px; font-size: 12px; line-height: 1.5; }
+.locations-grid .location-card-desc {
+  min-height: 3.6em;
+}
 .location-card-meta { font-size: 10px; color: var(--text-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .location-card-coords { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); letter-spacing: 0.5px; margin-bottom: 10px; }
 .location-card-coords i { color: var(--yellow-muted); margin-right: 3px; }
@@ -2850,6 +2861,7 @@ select.select:focus {
   align-items: center;
   gap: 8px;
   margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 
 /* comment within location detail */
@@ -3063,6 +3075,93 @@ select.select:focus {
 .view-result-count:not(:empty) {
   color: var(--yellow);
   border-color: var(--yellow-muted);
+}
+
+@media (max-width: 700px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .form-inline {
+    flex-wrap: wrap;
+  }
+
+  .form-inline .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .filter-panel-body,
+  .filter-selects,
+  .filter-select-wrap {
+    width: 100%;
+  }
+
+  .filter-search-wrap {
+    min-width: 100%;
+  }
+
+  .filter-select-wrap .input {
+    width: 100%;
+  }
+
+  .modal-overlay {
+    align-items: stretch;
+    padding: 10px;
+  }
+
+  .modal {
+    max-height: calc(100vh - 20px);
+  }
+
+  .modal-body-padded {
+    padding: 12px;
+  }
+
+  .auth-social-row,
+  .location-actions,
+  .view-header > .flex {
+    width: 100%;
+  }
+
+  .location-actions .btn,
+  .view-header > .flex .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  #toast-container {
+    left: 10px;
+    right: 10px;
+    bottom: 76px;
+    max-width: none;
+  }
+
+  .fab {
+    right: 14px;
+    bottom: 14px;
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 420px) {
+  .locations-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .locations-grid .location-card {
+    padding: 10px;
+  }
+
+  .lc-name {
+    white-space: normal;
+  }
+
+  .rating-btn {
+    flex: 1 1 44px;
+    justify-content: center;
+  }
 }
 
 /* ══════════════════════════════════════

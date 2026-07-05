@@ -22,12 +22,12 @@ export const uiMethods = {
           this.hideAuthModal();
           this.hideEditProfileModal();
           this.hideUserLocationsModal();
-          document.getElementById('search-modal')?.classList.remove('active');
+          this.closeGlobalSearch?.();
           document.querySelectorAll('.modal-overlay.active').forEach(m => m.remove());
         }
         // Shortcuts: Ctrl+K: Search, Ctrl+M: Map, Ctrl+P: Profile
         if (e.ctrlKey || e.metaKey) {
-          if (e.key === 'k') { e.preventDefault(); document.getElementById('search-modal').classList.add('active'); }
+          if (e.key === 'k') { e.preventDefault(); this.openGlobalSearch?.(); }
           else if (e.key === 'm') { e.preventDefault(); this.showView('map'); }
           else if (e.key === 'p') { e.preventDefault(); this.showView('profile'); }
         }
@@ -91,7 +91,11 @@ export const uiMethods = {
   },
 
   showView(viewName, viewParam) {
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      const active = btn.dataset.view === viewName;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-current', active ? 'page' : 'false');
+    });
     document.querySelectorAll('.view').forEach(view => view.classList.toggle('active', view.id === `${viewName}-view`));
 
     if (viewName === 'map' && this.map) setTimeout(() => this.map.invalidateSize(), 100);

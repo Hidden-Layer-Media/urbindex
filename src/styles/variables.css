@@ -55,7 +55,8 @@
   --scanline-opacity: 0.5;
   --glitch-duration: 0.3s;
 
-  /* ── Legacy aliases (used in inline JS template strings) ── */
+  /* Legacy aliases used in inline JS template strings. Avoid self-references here:
+     they invalidate the token and every var() call that depends on it. */
   --cz-yellow:          var(--yellow);
   --cz-yellow-dark:     var(--yellow-dim);
   --cz-black:           var(--black);
@@ -71,7 +72,6 @@
   --bg-secondary:       var(--black-raised);
   --text-primary:       var(--text);
   --text-secondary:     var(--text-dim);
-  --text-muted:         var(--text-muted);
   --accent-yellow:      var(--yellow);
   --success:            var(--green-term);
   --warning:            var(--amber);
@@ -79,7 +79,6 @@
   --font-stencil:       var(--font-mono);
   --font-blueprint:     var(--font-mono);
   --font-industrial:    var(--font-title);
-  --font-mono:          var(--font-mono);
   --shadow-industrial:  var(--shadow-panel);
   --shadow-plate:       inset 0 1px 0 rgba(255,255,255,0.05);
   --hazard-stripe:      repeating-linear-gradient(45deg, var(--yellow) 0px, var(--yellow) 6px, var(--black) 6px, var(--black) 12px);

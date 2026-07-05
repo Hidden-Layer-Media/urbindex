@@ -156,10 +156,10 @@ export const mapMethods = {
     const span = btn.querySelector('span');
     btn.classList.remove('loading');
     const states = {
-      loading: ['fa-spinner fa-spin', 'Locating...', true],
-      success: ['fa-check', 'Found!', false],
-      error:   ['fa-exclamation-triangle', 'Failed', false],
-      default: ['fa-crosshairs', 'My Location', false],
+      loading: ['fa-spinner fa-spin', 'locating...', true],
+      success: ['fa-check', 'located', false],
+      error:   ['fa-exclamation-triangle', 'gps_blocked', false],
+      default: ['fa-crosshairs', 'my_pos', false],
     };
     const [ic, tx, dis] = states[state] || states.default;
     if (icon) icon.className = `fas ${ic}`;

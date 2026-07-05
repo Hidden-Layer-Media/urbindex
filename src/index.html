@@ -47,6 +47,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#FFD000">
+  <meta name="color-scheme" content="dark">
 </head>
 <body>
 
@@ -76,13 +77,13 @@
         Session expires in <span id="session-countdown">5</span>m
         <button class="btn btn-sm" onclick="app.refreshSession()">Extend</button>
       </div>
-      <button class="btn btn-sm" onclick="document.getElementById('search-modal').classList.add('active');setTimeout(()=>document.getElementById('global-search-input')?.focus(),80)" title="Search (Ctrl+K)">
+      <button class="btn btn-sm" onclick="app.openGlobalSearch()" title="Search (Ctrl+K)" aria-label="Search">
         <i class="fas fa-search"></i>
       </button>
       <button class="btn btn-sm" id="profile-btn" onclick="app.handleProfileButtonClick()">
         <i class="fas fa-user-circle"></i> <span id="profile-btn-text">Profile</span>
       </button>
-      <button class="btn btn-primary btn-sm" id="auth-btn" type="button" onclick="app.handleAuth()">
+      <button class="btn btn-primary btn-sm" id="auth-btn" type="button">
         <i class="fas fa-terminal"></i>
         <span id="auth-btn-text">Sign In</span>
       </button>
@@ -653,11 +654,14 @@
 </div>
 
 <!-- Global Search Modal -->
-<div id="search-modal" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('active')">
+<div id="search-modal" class="modal-overlay" onclick="if(event.target===this)app.closeGlobalSearch()">
   <div class="modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
-    <div class="modal-header"><h3>// GLOBAL SEARCH</h3></div>
+    <div class="modal-header">
+      <h3>// GLOBAL SEARCH</h3>
+      <button class="modal-close" onclick="app.closeGlobalSearch()" aria-label="Close">&times;</button>
+    </div>
     <div class="modal-body">
-      <input class="input" type="text" id="global-search-input" placeholder="Search locations, posts, users..." autofocus>
+      <input class="input" type="text" id="global-search-input" placeholder="Search locations, posts, users...">
       <div id="global-search-results" class="search-results"></div>
     </div>
   </div>

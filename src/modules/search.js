@@ -16,6 +16,26 @@ export const searchMethods = {
     });
   },
 
+  openGlobalSearch() {
+    const modal = document.getElementById('search-modal');
+    const input = document.getElementById('global-search-input');
+    if (!modal) return;
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+    setTimeout(() => input?.focus(), 80);
+  },
+
+  closeGlobalSearch() {
+    const modal = document.getElementById('search-modal');
+    const input = document.getElementById('global-search-input');
+    const results = document.getElementById('global-search-results');
+    if (!modal) return;
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+    if (input) input.value = '';
+    if (results) results.innerHTML = '';
+  },
+
   async performGlobalSearch(query) {
     const results = document.getElementById('global-search-results');
     if (!results) return;
@@ -66,7 +86,7 @@ export const searchMethods = {
   },
 
   handleSearchResult(type, id) {
-    document.getElementById('search-modal').classList.remove('active');
+    this.closeGlobalSearch();
     if (type === 'Location') this.showLocationDetailModal(id);
     else if (type === 'Post') this.showView('social');
     else if (type === 'User') this.showView('profile', id);

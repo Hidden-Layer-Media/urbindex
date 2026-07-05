@@ -14,6 +14,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -57,12 +58,14 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .header-right {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .status-bar {
@@ -115,6 +118,8 @@
   top: 48px;
   z-index: 90;
   overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--yellow-muted) var(--black-panel);
 }
 
 .nav-btn {
@@ -193,6 +198,7 @@
   gap: 6px;
   overflow-y: auto;
   overflow-x: hidden;
+  min-width: 0;
 }
 
 /* ── Panel ── */
@@ -240,6 +246,7 @@
   overflow: hidden;
   position: relative;
   height: 100%;
+  min-width: 0;
 }
 
 #map {
@@ -262,6 +269,7 @@
   padding: 7px 12px 6px;
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .cmd-id-title {
@@ -297,6 +305,8 @@
   gap: 10px;
   font-family: var(--font-mono);
   font-size: 11px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .cmd-live-stat {
@@ -427,15 +437,104 @@
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
-  .map-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
+  .header {
     height: auto;
+    min-height: 48px;
+    padding: 8px 10px;
+    align-items: flex-start;
   }
 
-  .sidebar { max-height: 200px; }
+  .header-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
 
-  .dashboard-hero { flex-direction: column; }
+  .logo {
+    font-size: 17px;
+    letter-spacing: 4px;
+  }
+
+  .logo-tag,
+  .status-bar {
+    display: none;
+  }
+
+  .header-right {
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .header-right .btn {
+    min-height: 32px;
+  }
+
+  .nav {
+    top: 64px;
+    padding: 0 8px;
+  }
+
+  .map-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(420px, 62vh);
+    height: auto;
+    min-height: 0;
+  }
+
+  .sidebar {
+    max-height: 260px;
+    order: 2;
+  }
+
+  .map-container {
+    order: 1;
+    height: min(62vh, 560px);
+    min-height: 420px;
+  }
+
+  .cmd-id-bar,
+  .cmd-action-bar {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .cmd-live-stats {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
 
   .main { padding: 8px; }
+}
+
+@media (max-width: 520px) {
+  .header {
+    position: static;
+  }
+
+  .nav {
+    position: sticky;
+    top: 0;
+  }
+
+  .nav-btn {
+    padding: 10px 11px;
+    letter-spacing: 1px;
+  }
+
+  .cmd-id-title {
+    font-size: 13px;
+    letter-spacing: 4px;
+  }
+
+  .cmd-action-bar .btn {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .map-container {
+    min-height: 360px;
+  }
 }
