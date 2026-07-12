@@ -58,14 +58,12 @@ service cloud.firestore {
                     request.resource.data.coordinates.size() == 2;
       allow update: if request.auth != null && (
                     resource.data.createdBy == request.auth.uid ||
-                    // Allow anyone to update social counters
-                    request.resource.data.diff(resource.data).affectedKeys()
-                      .hasOnly(['likesCount', 'visitCount', 'commentCount', 'updatedAt'])
+                    // Allow only server-side managed counter increments via transactions
+                    false
                     ) &&
-                    // If creator is updating, allow all content fields
                     (resource.data.createdBy != request.auth.uid || 
                      request.resource.data.diff(resource.data).affectedKeys()
-                      .hasOnly(['name', 'description', 'category', 'riskLevel', 'coordinates', 'address', 'tags', 'updatedAt', 'status', 'likesCount', 'visitCount', 'commentCount']));
+                      .hasOnly(['name', 'description', 'category', 'riskLevel', 'coordinates', 'address', 'tags', 'updatedAt', 'status']));
       allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
     
@@ -231,8 +229,7 @@ service cloud.firestore {
     // User badges/achievements - users can read all badges, only admin/system can manage
     match /user_badges/{badgeId} {
       allow read: if true;
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if false; // System managed
+      allow create, update, delete: if false; // System managed
     }
 
     // Missions/challenges - authenticated users can read all missions
@@ -321,7 +318,7 @@ service cloud.firestore {
     // User XP & Level (read-only for public, restricted write)
     match /user_xp/{userId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow write: if false; // System managed
     }
 
     // Verified Status (admin managed)

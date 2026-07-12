@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "start": "vite",
     "deploy": "npm run build && firebase deploy",
+    "deploy:tor": "bash tor-mirror/setup.sh",
     "lint": "eslint src/**/*.js",
     "test": "playwright test"
   },
@@ -38,8 +39,8 @@
     "vite-plugin-pwa": "^1.2.0"
   },
   "engines": {
-    "node": ">=14.0.0"
-  },
+      "node": ">=20.0.0"
+    },
   "browserslist": [
     ">0.2%",
     "not dead",
