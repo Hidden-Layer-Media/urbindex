@@ -116,7 +116,17 @@ service cloud.firestore {
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
       allow update: if request.auth != null && (
                     resource.data.createdBy == request.auth.uid ||
-                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'commentCount'])
+                    (
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'commentCount']) &&
+                      request.resource.data.likesCount is int &&
+                      request.resource.data.commentCount is int &&
+                      request.resource.data.likesCount >= 0 &&
+                      request.resource.data.commentCount >= 0 &&
+                      request.resource.data.likesCount >= resource.data.likesCount - 1 &&
+                      request.resource.data.likesCount <= resource.data.likesCount + 1 &&
+                      request.resource.data.commentCount >= resource.data.commentCount &&
+                      request.resource.data.commentCount <= resource.data.commentCount + 1
+                    )
                     );
       allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
@@ -131,9 +141,20 @@ service cloud.firestore {
                     request.resource.data.title.size() <= 120;
       allow update: if request.auth != null && (
                     resource.data.authorId == request.auth.uid ||
-                    // allow postCount / lastPost metadata updates from any auth'd user (reply flow)
-                    request.resource.data.diff(resource.data).affectedKeys()
-                      .hasOnly(['postCount', 'lastPostAt', 'lastPostAuthorName', 'likesCount'])
+                    (
+                      // Reply/like flow metadata only. Full thread edits stay author-owned.
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['postCount', 'lastPostAt', 'lastPostAuthorName', 'likesCount']) &&
+                      request.resource.data.postCount is int &&
+                      request.resource.data.likesCount is int &&
+                      request.resource.data.postCount >= resource.data.postCount &&
+                      request.resource.data.postCount <= resource.data.postCount + 1 &&
+                      request.resource.data.likesCount >= 0 &&
+                      request.resource.data.likesCount >= resource.data.likesCount - 1 &&
+                      request.resource.data.likesCount <= resource.data.likesCount + 1 &&
+                      request.resource.data.lastPostAuthorName is string &&
+                      request.resource.data.lastPostAuthorName.size() <= 80
+                    )
                     );
       allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
     }
@@ -260,7 +281,14 @@ service cloud.firestore {
     match /groups/{groupId} {
       allow read: if true; // Allow public access to view groups/teams
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
-      allow update: if request.auth != null && (resource.data.createdBy == request.auth.uid || resource.data.members.hasAny([request.auth.uid]));
+      allow update: if request.auth != null && (
+        resource.data.createdBy == request.auth.uid ||
+        (
+          resource.data.members.hasAny([request.auth.uid]) &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['lastActivityAt', 'memberCount'])
+        )
+      );
       allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
 
