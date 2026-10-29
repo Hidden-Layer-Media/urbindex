@@ -330,9 +330,9 @@ service cloud.firestore {
       allow read: if true; // Allow public access to view location visits
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid &&
                     visitId in [
-                      request.resource.data.locationId + '_' + request.auth.uid + '_' + string(math.floor(request.time.toMillis() / 86400000)),
-                      request.resource.data.locationId + '_' + request.auth.uid + '_' + string(math.floor(request.time.toMillis() / 86400000) - 1),
-                      request.resource.data.locationId + '_' + request.auth.uid + '_' + string(math.floor(request.time.toMillis() / 86400000) + 1)
+                      request.resource.data.locationId + '_' + request.auth.uid + '_' + string(int(request.time.toMillis() / 86400000)),
+                      request.resource.data.locationId + '_' + request.auth.uid + '_' + string(int(request.time.toMillis() / 86400000) - 1),
+                      request.resource.data.locationId + '_' + request.auth.uid + '_' + string(int(request.time.toMillis() / 86400000) + 1)
                     ];
     }
 

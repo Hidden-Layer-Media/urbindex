@@ -55,7 +55,7 @@ test('visibility must match collection', async () => {
 });
 
 test('location ids must be plain', async () => {
-  await assertFails(setDoc(doc(as('alice'), "locations/x');alert(1)//"), { ...base, createdBy: 'alice', visibility: 'public' }));
+  await assertFails(setDoc(doc(as('alice'), "locations/x');alert(1);x"), { ...base, createdBy: 'alice', visibility: 'public' }));
 });
 
 test('cannot create location as someone else', async () => {
