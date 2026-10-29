@@ -2,12 +2,21 @@ name: Deploy to Firebase Hosting
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -15,8 +24,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm ci
 
       - name: Create .env file
@@ -31,9 +41,14 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Deploy to Firebase
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_URBINDEX_D69E1 }}'
-          projectId: urbindex-d69e1
+      - name: Deploy preview channel (PR only)
+        if: github.event_name == 'pull_request'
+        run: npx --yes firebase-tools@latest hosting:channel:deploy pr-${{ github.event.number }} --project urbindex-d69e1 --expires 7d
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+
+      - name: Deploy hosting + Firestore rules (main)
+        if: github.event_name != 'pull_request'
+        run: npx --yes firebase-tools@latest deploy --only hosting,firestore:rules --project urbindex-d69e1 --non-interactive
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
