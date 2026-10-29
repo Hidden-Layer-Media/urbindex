@@ -43,6 +43,19 @@ export const locationsMethods = {
     return !visibility || visibility === 'public' ? 'locations' : 'private_locations';
   },
 
+  // Private/followers spots are owner-only, so likes, check-ins, status reports, comments
+  // and share links (which all target the public collection) don't apply to them.
+  isPrivateLocation(data) {
+    return !!data?.visibility && data.visibility !== 'public';
+  },
+
+  // Returns true (and tells the user) if `id` is one of their private spots.
+  blockIfPrivate(id) {
+    if (!this.isPrivateLocation(this.markers.get(id)?._ubData)) return false;
+    this.showToast('Not available on private spots', 'info');
+    return true;
+  },
+
   // Find a location doc in whichever collection holds it.
   async getLocationRef(id) {
     const pubRef = this.db.collection('locations').doc(id);
@@ -344,6 +357,7 @@ export const locationsMethods = {
   // Like/unlike toggle. The like doc and the counter change go in one batch so the rules can verify it.
   async likeLocation(locationId) {
     if (!this.currentUser) { this.showToast('Sign in to like locations', 'warning'); return; }
+    if (this.blockIfPrivate(locationId)) return;
     const opKey = `like-${locationId}`;
     if (this.activeOperations.has(opKey)) return;
     this.activeOperations.add(opKey);
@@ -390,6 +404,7 @@ export const locationsMethods = {
 
   async addComment(locationId, text) {
     if (!this.currentUser) { this.showToast('Sign in to comment', 'warning'); return; }
+    if (this.blockIfPrivate(locationId)) return;
     if (!text?.trim()) { this.showToast('Comment cannot be empty', 'warning'); return; }
     try {
       const commentRef = this.db.collection('location_comments').doc();
@@ -431,6 +446,7 @@ export const locationsMethods = {
 
   async checkInLocation(locationId) {
     if (!this.currentUser) { this.showToast('Sign in to check in', 'warning'); this.handleAuth(); return; }
+    if (this.blockIfPrivate(locationId)) return;
     const opKey = `checkin-${locationId}`;
     if (this.activeOperations.has(opKey)) return;
     this.activeOperations.add(opKey);
@@ -463,6 +479,7 @@ export const locationsMethods = {
     this.getLocationRef(locationId).then(({ doc }) => {
       if (!doc.exists) return;
       const data = doc.data();
+      const isPrivate = this.isPrivateLocation(data);
       const modal = document.getElementById('location-detail-modal');
       const content = document.getElementById('location-detail-content');
       if (!modal || !content) return;
@@ -496,7 +513,7 @@ export const locationsMethods = {
               ${vibeBadge || '<span class="text-muted">No current status reported</span>'}
               <span class="text-muted small">Updated ${vibeDate}</span>
             </div>
-            ${this.currentUser ? `
+            ${this.currentUser && !isPrivate ? `
               <div class="status-report-bar mt-8">
                 <button class="btn btn-sm status-report-btn" onclick="app.updateLocationStatus('${locationId}', 'quiet')"><i class="fas fa-leaf"></i> Quiet</button>
                 <button class="btn btn-sm status-report-btn" onclick="app.updateLocationStatus('${locationId}', 'busy')"><i class="fas fa-users"></i> Busy</button>
@@ -511,11 +528,12 @@ export const locationsMethods = {
           <p class="location-detail-desc">${this.escapeHtml(data.description || '')}</p>
           ${tagsHtml}
           <div class="detail-stats-row">
+            ${isPrivate ? `<span class="detail-stat private-chip"><i class="fas fa-lock"></i> ${data.visibility === 'followers' ? 'followers only' : 'private'}</span>` : `
             <span class="detail-stat"><i class="fas fa-eye"></i> ${data.visitCount || 0} visits</span>
-            <span class="detail-stat"><i class="fas fa-heart"></i> ${data.likesCount || 0} likes</span>
+            <span class="detail-stat"><i class="fas fa-heart"></i> ${data.likesCount || 0} likes</span>`}
             ${coords ? `<span class="detail-stat detail-coords"><i class="fas fa-map-pin"></i> ${coords}</span>` : ''}
           </div>
-          ${this.currentUser ? `<div class="flex gap-8 location-detail-actions">
+          ${isPrivate ? '<p class="text-muted small">Only you can see this spot, so likes, check-ins, status reports, comments and sharing are off.</p>' : this.currentUser ? `<div class="flex gap-8 location-detail-actions">
             <button class="btn btn-primary" onclick="app.checkInLocation('${locationId}')"><i class="fas fa-map-marker-alt"></i> Check In</button>
             <button class="btn" onclick="app.likeLocation('${locationId}')"><i class="fas fa-heart"></i> Like</button>
             <button class="btn" onclick="app.shareLocation('${locationId}', ${this.escapeHtml(JSON.stringify(data.name || 'Urbindex spot'))})"><i class="fas fa-share-nodes"></i> Share</button>
@@ -523,23 +541,24 @@ export const locationsMethods = {
           </div>` : `<div class="flex gap-8 location-detail-actions">
             <button class="btn" onclick="app.shareLocation('${locationId}', ${this.escapeHtml(JSON.stringify(data.name || 'Urbindex spot'))})"><i class="fas fa-share-nodes"></i> Share</button>
           </div><p class="text-muted small">Sign in for more actions.</p>`}
-          <div class="detail-comments-section">
+          ${isPrivate ? '' : `<div class="detail-comments-section">
             <div class="detail-section-label">// COMMENTS</div>
             <div id="comments-${locationId}" class="location-detail-comments"></div>
             ${this.currentUser ? `<div class="flex gap-8 location-detail-comment-form mt-8">
               <input class="input" id="comment-input-${locationId}" placeholder="Add a comment...">
               <button class="btn btn-primary" onclick="app.addComment('${locationId}',document.getElementById('comment-input-${locationId}').value)"><i class="fas fa-paper-plane"></i></button>
             </div>` : ''}
-          </div>
+          </div>`}
         </div>`;
       modal.classList.add('active');
       modal.onclick = e => { if (e.target === modal) modal.classList.remove('active'); };
-      this.loadLocationComments(locationId);
+      if (!isPrivate) this.loadLocationComments(locationId);
     }).catch(() => this.showToast('Failed to load location details', 'error'));
   },
 
   async updateLocationStatus(locationId, vibe) {
     if (!this.currentUser) { this.showToast('Sign in to report status', 'warning'); return; }
+    if (this.blockIfPrivate(locationId)) return;
     const opKey = `status-${locationId}`;
     if (this.activeOperations.has(opKey)) return;
     this.activeOperations.add(opKey);
