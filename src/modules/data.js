@@ -153,11 +153,13 @@ export const dataMethods = {
 
   async loadStats() {
     try {
-      const [locSnap, usersSnap] = await Promise.all([
+      // users needs sign-in; don't let that zero out the public location count
+      const [locRes, usersRes] = await Promise.allSettled([
         this.db.collection('locations').where('status', '==', 'active').get(),
         this.db.collection('users').where('lastSeen', '>', new Date(Date.now() - 86400000)).get(),
       ]);
-      const lc = locSnap.size; const uc = usersSnap.size;
+      const lc = locRes.status === 'fulfilled' ? locRes.value.size : 0;
+      const uc = usersRes.status === 'fulfilled' ? usersRes.value.size : 0;
       const el = id => document.getElementById(id);
       if (el('total-locations')) el('total-locations').textContent = lc;
       if (el('active-users')) el('active-users').textContent = uc;
