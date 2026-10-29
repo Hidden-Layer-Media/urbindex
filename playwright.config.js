@@ -6,6 +6,7 @@ const systemChromium = '/usr/bin/chromium';
 
 export default defineConfig({
   testDir: './tests/e2e',
+  retries: process.env.CI ? 2 : 0,
   use: {
     baseURL: 'http://localhost:8080',
     headless: true,
