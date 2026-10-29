@@ -17,6 +17,8 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+    env:
+      HAS_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -44,17 +46,26 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Prefer a service account key (secret FIREBASE_SERVICE_ACCOUNT) over the deprecated FIREBASE_TOKEN.
+      - name: Use service account if configured
+        if: env.HAS_SA == 'true'
+        run: |
+          echo "$SA_JSON" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+        env:
+          SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
       - name: Deploy preview channel (PR only)
         if: github.event_name == 'pull_request'
         run: npx --yes firebase-tools@latest hosting:channel:deploy pr-${{ github.event.number }} --project urbindex-d69e1 --expires 7d
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_SERVICE_ACCOUNT == '' && secrets.FIREBASE_TOKEN || '' }}
 
       - name: Deploy hosting + Firestore rules (main)
         if: github.event_name != 'pull_request'
-        run: npx --yes firebase-tools@latest deploy --only hosting,firestore:rules --project urbindex-d69e1 --non-interactive
+        run: npx --yes firebase-tools@latest deploy --only hosting,firestore:rules,firestore:indexes --project urbindex-d69e1 --non-interactive
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_SERVICE_ACCOUNT == '' && secrets.FIREBASE_TOKEN || '' }}
 
   # Browser smoke tests. Reports results but doesn't block deploys.
   e2e:

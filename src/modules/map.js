@@ -119,14 +119,14 @@ export const mapMethods = {
   getLocaleBasedFallback() { return [39.83, -98.58]; },
 
   cacheUserLocation(lat, lng) {
-    try { sessionStorage.setItem('urbindex_user_location', JSON.stringify({ lat, lng, timestamp: Date.now() })); } catch {}
+    try { sessionStorage.setItem('urbindex_user_location', JSON.stringify({ lat, lng, timestamp: Date.now() })); } catch { /* storage unavailable (private mode) */ }
   },
 
   getCachedUserLocation() {
     try {
       const d = JSON.parse(sessionStorage.getItem('urbindex_user_location') || 'null');
       if (d && Date.now() - d.timestamp < 300000) return [d.lat, d.lng];
-    } catch {}
+    } catch { /* storage unavailable (private mode) */ }
     return null;
   },
 

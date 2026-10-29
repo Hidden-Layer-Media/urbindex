@@ -166,7 +166,7 @@ export const settingsMethods = {
       set('settings-map-style', s.mapStyle);
       if (s.mapStyle) this.changeTileLayer(s.mapStyle);
       if (s.locationVisibility) this._locationVisibility = s.locationVisibility;
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
   },
 
   async updateAccountSettings() {

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-**Urbindex** — a PWA for urban exploration mapping. Users add geotagged locations to a shared Firestore database, visible as real-time map markers. Stack: vanilla JS ES6 modules, Leaflet + CartoDB Dark tiles, Firebase (Auth + Firestore), Vite build, deployed to Firebase Hosting.
+**Urbindex** — a PWA for urban exploration mapping. Users add geotagged locations to a shared Firestore database, visible as real-time map markers. Stack: vanilla JS ES6 modules, Leaflet + OpenStreetMap tiles (keyless), Firebase (Auth + Firestore), Vite build, deployed to Firebase Hosting.
 
 ## Commands
 
@@ -13,19 +13,13 @@ npm run dev        # dev server at localhost:8080
 npm run build      # production build → dist/
 npm run preview    # preview built output
 npm run deploy     # build + firebase deploy (hosting only)
-npm run lint       # ESLint on src/**/*.js
-npm run test       # Playwright e2e tests
+npm run lint       # ESLint on src/**/*.js (CI fails on errors)
+npm run test       # Playwright e2e tests (needs .env with Firebase config, else auth never inits)
 ```
 
-Single e2e test file:
-```bash
-npx playwright test tests/e2e/smoke.spec.js
-```
+Deploys: every push to `main` runs `.github/workflows/deploy.yml` (lint → build → `firebase deploy --only hosting,firestore:rules,firestore:indexes`). A separate non-blocking `e2e` job runs Playwright. Auth uses `FIREBASE_SERVICE_ACCOUNT` secret if set, else the deprecated `FIREBASE_TOKEN`. `package-lock.json` must stay committed (`npm ci`).
 
-Unit/integration tests use Mocha + Chai:
-```bash
-npx mocha tests/database_operations_test.js
-```
+Firebase SDK is the **compat** build loaded from gstatic in `src/index.html` (currently 12.19.0), not from npm.
 
 ## Architecture
 
@@ -47,24 +41,22 @@ All modules export a plain object of methods. They share `this` at runtime — a
 
 ### Real-time data flow
 
-`dataMethods.loadData()` sets up two persistent `onSnapshot` listeners:
+`dataMethods.loadLocations()` (re-run on every auth state change) subscribes to:
+1. `locations` where `status == 'active'` — public pins.
+2. `private_locations` where `createdBy == uid` and `status == 'active'` — the signed-in user's own private/followers-only pins.
 
-1. **`loadLocations()`** — `locations` collection filtered by `status == 'active'`, ordered by `createdAt desc`. On every snapshot it clears `markerClusterGroup`, rebuilds `this.markers` Map, and re-adds all markers. This is the source of truth for map pins.
-2. **`loadActivity()`** — same collection, limit 10, feeds the activity feed sidebar.
+Both feed `applyLocationChanges()`, which applies `snap.docChanges()` incrementally to the single `markerClusterGroup` (created in `data.js`) and the `this.markers` Map keyed by doc id. `loadActivity()` is a separate limit-10 listener for the sidebar feed.
 
-`loadStats()` is a one-time fetch.
+### Location privacy
 
-### Known dual cluster group conflict
-
-`map.js:initializeMap()` creates `this.markerClusterGroup` (maxClusterRadius: 60) and adds it to the map. `data.js:loadLocations()` then overwrites `this.markerClusterGroup` with a new instance (maxClusterRadius: 50, chunkedLoading, spiderfyOnMaxZoom, etc.) and adds *that* to the map — leaving the first one orphaned on the Leaflet instance. Any fix must consolidate cluster creation to one place.
-
-Additionally, `map.js:updateMapMarkers()` (called from `locations.js:renderFilteredLocations()`) calls `markerClusterGroup.clearLayers()` and repopulates with only the current user's filtered locations, wiping the full dataset from `loadLocations()` until the next snapshot fires.
+Visibility is per-user (`user_settings.locationVisibility`: public / followers / private). **Public docs live in `locations` (world-readable); followers/private docs live in `private_locations` (owner-only in rules).** Use `locationCollection(visibility)`, `getLocationRef(id)` (finds a doc in either collection), `getOwnLocationDocs(uid)` and `setLocationVisibility(doc, v)` (moves docs between collections) in `locations.js` — never query `locations` alone when you mean "my locations". "Followers" is currently treated as owner-only; follower read access isn't implemented.
 
 ### Firestore collections
 
 | Collection | Purpose |
 |---|---|
-| `locations` | Main content — coordinates, category, riskLevel, status, createdBy |
+| `locations` | Public spots — coordinates, category, riskLevel, status, createdBy |
+| `private_locations` | Followers-only / private spots, same schema, owner-only |
 | `users` | Profiles — displayName, lastSeen |
 | `location_comments` | Comments keyed by locationId |
 | `location_likes` | Likes keyed by userId_locationId |
@@ -74,7 +66,7 @@ Additionally, `map.js:updateMapMarkers()` (called from `locations.js:renderFilte
 | `routes`, `groups`, `missions` | Gamification, partially stubbed |
 | `direct_messages` | Private messaging |
 
-Security rules: locations and users are public read; all writes are gated on `auth.uid`. Location create/update is validated server-side (coordinate bounds, field presence, name pattern). Rate limiting helper in rules limits profile updates.
+Security rules: `locations` is public read, `private_locations` owner-only; `locations` rejects non-public visibility; all writes are gated on `auth.uid`. Location create/update is validated server-side (coordinate bounds, field presence, name pattern). Rate limiting helper in rules limits profile updates.
 
 ### Styles
 
@@ -89,11 +81,11 @@ Map-specific Leaflet overrides (popup, tooltip, zoom controls, cluster markers, 
 
 Location markers are diamond-shaped divIcons (`.ub-pin`) colored by `riskLevel` via CSS classes (`risk-safe` → `risk-extreme`). They have a CSS pulse ring animation. Cluster markers are styled black/yellow squares that scale to amber/red at medium/large counts. All marker and Leaflet UI CSS is in `components.css` under the `LEAFLET MAP THEME` section.
 
-Tile layer: CartoDB DarkMatter (`https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png`), with a CSS filter on `.leaflet-tile-pane` for the amber-noir tint.
+Tile layers (`map.js:_makeTileLayer`, all keyless): default = OSM, dark = OSM with `.leaflet-layer.tiles-dark` invert filter, terrain = OpenTopoMap. CARTO basemaps now require an API key — don't reintroduce them. OSM tile policy: keep attribution on, no bulk prefetching. A CSS filter on `.leaflet-tile-pane` adds the amber-noir tint.
 
 ### PWA / service worker
 
-Vite PWA plugin auto-generates the service worker. Caching strategy: CacheFirst for OSM/CARTO tiles (200 entries, 7-day TTL), NetworkFirst for Firestore. The manifest theme color is `#FFD000`.
+Vite PWA plugin auto-generates the service worker. Caching strategy: CacheFirst for OSM/OpenTopoMap tiles (500 entries, 7-day TTL), NetworkFirst for Firestore. The manifest theme color is `#FFD000`.
 
 ## Current development priorities
 
@@ -115,12 +107,7 @@ Vite PWA plugin auto-generates the service worker. Caching strategy: CacheFirst 
 - create/join/leave work
 - need: group detail page (member list, shared location pins filtered to group, basic group post feed)
 
-**privacy enforcement**
-- visibility settings (location visibility, activity visibility) exist in settings.js and are saved to `user_settings`
-- need: apply them — filter `loadLocations()` and `loadActivity()` queries based on the viewer's relationship to the owner
-
 **ui polish targets**
-- fix the dual marker cluster group conflict (see "Known dual cluster group conflict" above) — consolidate to one cluster group created in `data.js`, remove the one in `map.js:initializeMap()`
 - dm / notifications unread badge in the nav
 - consistent empty states across all views (locations list, social feed, groups, profile)
 - profile gallery: replace the raw URL textarea with a proper file input or URL-per-line input with preview thumbnails

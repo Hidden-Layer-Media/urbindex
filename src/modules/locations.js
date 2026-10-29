@@ -403,7 +403,7 @@ export const locationsMethods = {
       let total = 0; snap.forEach(doc => { total += doc.data().value || 0; });
       const el = document.getElementById(`rating-score-${locationId}`);
       if (el) el.textContent = total.toFixed(1);
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
   },
 
   async addComment(locationId, text) {
@@ -438,7 +438,7 @@ export const locationsMethods = {
         el.innerHTML = `<span class="comment-user">${this.escapeHtml(d.displayName)}</span><span class="comment-time">${this.timeAgo(d.createdAt?.toDate?.())}</span><p>${this.escapeHtml(d.text)}</p>`;
         container.appendChild(el);
       });
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
   },
 
   async checkInLocation(locationId) {

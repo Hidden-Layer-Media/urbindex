@@ -162,7 +162,7 @@ export const dataMethods = {
       if (el('hero-total-locations')) el('hero-total-locations').textContent = lc;
       if (el('hero-active-users')) el('hero-active-users').textContent = uc;
       if (el('hero-activity-index')) el('hero-activity-index').textContent = Math.min(99, Math.max(0, Math.round(lc * 0.7 + uc * 1.3)));
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
   },
 
   loadActivity() {
@@ -221,14 +221,14 @@ export const dataMethods = {
       if (action === 'check_in' && !badgeIds.includes('first_visit')) toAward.push('first_visit');
 
       await Promise.all(toAward.map(b => this.awardBadge(userId, b)));
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
   },
 
   async awardBadge(userId, badgeId) {
     try {
       await this.db.collection('user_badges').add({ userId, badgeId, awardedAt: firebase.firestore.FieldValue.serverTimestamp() });
       await this.createNotification(userId, 'badge', `You earned the "${this.getBadgeName(badgeId)}" badge!`);
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
   },
 
   async createNotification(userId, type, message) {
@@ -237,7 +237,7 @@ export const dataMethods = {
         userId, type, message, read: false, createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       });
       this.updateNotificationBadge();
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
   },
 
   showNotifications() {
@@ -282,7 +282,7 @@ export const dataMethods = {
 
   async markNotificationAsRead(id) {
     try { await this.db.collection('user_notifications').doc(id).update({ read: true }); this.loadNotifications(); this.updateNotificationBadge(); }
-    catch {}
+    catch (err) { console.warn('[urbindex]', err); }
   },
 
   async markAllNotificationsAsRead() {
@@ -294,7 +294,7 @@ export const dataMethods = {
       await batch.commit();
       this.unreadNotifications = 0; this.updateNotificationBadge(); this.showNotifications();
       this.showToast('All notifications marked as read', 'success');
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
   },
 
   async updateNotificationBadge() {
@@ -304,7 +304,7 @@ export const dataMethods = {
       this.unreadNotifications = snap.size;
       const badge = document.getElementById('notification-badge');
       if (badge) { badge.textContent = snap.size; badge.classList.toggle('hidden', snap.size === 0); }
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
   },
 
   showRoutes() {

@@ -356,7 +356,7 @@ export const socialMethods = {
         const btn = document.getElementById(`like-btn-${item.id}`);
         if (btn && likedIds.has(item.id)) btn.classList.add('active');
       });
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
   },
 
   async deleteOwnPost(postId, btn) {
@@ -523,7 +523,7 @@ export const socialMethods = {
       if (!doc.exists) { this.showToast('Location not found', 'error'); return; }
       const d = doc.data();
       if (d.coordinates?.length === 2) this.focusMapOnLocation(d.coordinates[0], d.coordinates[1]);
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
   },
 
   async followUser(userId) {

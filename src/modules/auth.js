@@ -232,7 +232,7 @@ export const authMethods = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       }, { merge: true });
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
   },
 
   updateAuthUI() {
@@ -417,7 +417,7 @@ export const authMethods = {
       this.hideSessionWarning();
       this.updateAuthUI();
       this.showToast('Your session has expired. Please sign in again.', 'warning');
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
   },
 
   async refreshSession() {
@@ -459,7 +459,7 @@ export const authMethods = {
         lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
         online: true,
       }, { merge: true });
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
     try {
       const settingsDoc = await this.db.collection('user_settings').doc(this.currentUser.uid).get();
       this._locationVisibility = settingsDoc.exists ? (settingsDoc.data().locationVisibility || 'public') : 'public';

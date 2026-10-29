@@ -13,7 +13,7 @@ export const gamificationMethods = {
         const newLevel = Math.floor(newXP / 100) + 1;
         transaction.set(ref, { xp: newXP, level: newLevel, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       });
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
   },
 
   getUserLevelBadge(level) {

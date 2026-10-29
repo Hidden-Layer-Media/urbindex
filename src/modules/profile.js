@@ -430,7 +430,7 @@ export const profileMethods = {
       if (set('profile-visits-count')) set('profile-visits-count').textContent = visits;
       if (set('profile-badges-count')) set('profile-badges-count').textContent = badgesSnap.size;
       this.renderUserBadges(badgesSnap.docs.map(d => d.data()));
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
   },
 
   renderUserBadges(badges) {
@@ -550,6 +550,6 @@ export const profileMethods = {
     try {
       const snap = await this.db.collection('user_followers').doc(`${this.currentUser.uid}_${userId}`).get();
       this.updateFollowButtons(userId, snap.exists);
-    } catch {}
+    } catch (err) { console.warn('[urbindex]', err); }
   },
 };
