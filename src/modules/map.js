@@ -18,7 +18,7 @@ export const mapMethods = {
       center: [lat, lng],
       zoom: 13,
       zoomControl: true,
-      attributionControl: false,
+      attributionControl: true,
       maxBounds: [[-90, -180], [90, 180]],
       maxBoundsViscosity: 1.0,
     });
@@ -32,10 +32,12 @@ export const mapMethods = {
   },
 
   _makeTileLayer(style) {
+    // All keyless. CARTO basemaps now need an API key, so dark mode is OSM tiles with a CSS invert filter.
+    const osm = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
     const tiles = {
-      default: ['https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap', maxZoom: 19 }],
-      dark:    ['https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO', subdomains: 'abcd', maxZoom: 19 }],
-      terrain: ['https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO', subdomains: 'abcd', maxZoom: 19 }],
+      default: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: osm, maxZoom: 19 }],
+      dark:    ['https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: osm, maxZoom: 19, className: 'tiles-dark' }],
+      terrain: ['https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: osm + ', &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', subdomains: 'abc', maxZoom: 17 }],
     };
     const [url, opts] = tiles[style] || tiles.dark;
     return L.tileLayer(url, opts);

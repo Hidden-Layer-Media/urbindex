@@ -55,9 +55,9 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/[a-z].tile\.openstreetmap\.org\/.*/,
+            urlPattern: /^https:\/\/([a-z]\.)?tile\.(openstreetmap|opentopomap)\.org\/.*/,
             handler: 'CacheFirst',
-            options: { cacheName: 'osm-tiles', expiration: { maxEntries: 200, maxAgeSeconds: 604800 } },
+            options: { cacheName: 'osm-tiles', expiration: { maxEntries: 500, maxAgeSeconds: 604800 } },
           },
           {
             urlPattern: /^https:\/\/firestore\.googleapis\.com\/.*/,

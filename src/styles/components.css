@@ -4295,3 +4295,8 @@ select.select:focus {
   font-size: 11px;
   letter-spacing: 1.5px;
 }
+
+/* Dark map mode: invert OSM tiles (keyless replacement for CARTO dark_all) */
+.leaflet-layer.tiles-dark {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9) saturate(0.6);
+}
