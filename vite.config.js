@@ -57,7 +57,7 @@ export default defineConfig({
           {
             urlPattern: /^https:\/\/([a-z]\.)?tile\.(openstreetmap|opentopomap)\.org\/.*/,
             handler: 'CacheFirst',
-            options: { cacheName: 'osm-tiles', expiration: { maxEntries: 500, maxAgeSeconds: 604800 } },
+            options: { cacheName: 'osm-tiles', expiration: { maxEntries: 2000, maxAgeSeconds: 2592000 }, cacheableResponse: { statuses: [0, 200] } },
           },
           {
             urlPattern: /^https:\/\/firestore\.googleapis\.com\/.*/,

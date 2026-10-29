@@ -4300,3 +4300,73 @@ select.select:focus {
 .leaflet-layer.tiles-dark {
   filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9) saturate(0.6);
 }
+
+/* ── Category pin icons (explore.js) ── */
+.ub-pin {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ub-pin-icon {
+  transform: rotate(-45deg);
+  font-size: 10px;
+  color: #000;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* ── Nearest spots list (Area Ops panel) ── */
+.nearby-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--yellow);
+}
+.nearby-refresh {
+  background: none;
+  border: 1px solid rgba(255, 208, 0, 0.3);
+  color: var(--yellow);
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 10px;
+}
+.nearby-refresh:hover { border-color: var(--yellow); }
+.nearby-origin { font-size: 9px; color: #777; margin: 2px 0 6px; }
+.nearby-list { display: flex; flex-direction: column; gap: 2px; }
+.nearby-item {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 4px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: #ddd;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+.nearby-item:hover { background: rgba(255, 208, 0, 0.08); color: var(--yellow); }
+.nearby-icon { font-size: 11px; text-align: center; }
+.nearby-icon.risk-safe { color: #00FF41; }
+.nearby-icon.risk-low { color: #88FF00; }
+.nearby-icon.risk-medium { color: #FFAA00; }
+.nearby-icon.risk-high { color: #FF4400; }
+.nearby-icon.risk-extreme { color: #FF0040; }
+.nearby-icon.risk-unknown { color: #888; }
+.nearby-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nearby-dist { color: #888; font-size: 10px; }
+.nearby-empty { font-size: 10px; color: #666; padding: 4px 0; }
+
+/* ── Report modal ── */
+.report-form { display: flex; flex-direction: column; gap: 6px; }
+.report-reason { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }

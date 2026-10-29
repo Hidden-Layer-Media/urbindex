@@ -58,6 +58,10 @@ service cloud.firestore {
       return ['name', 'description', 'category', 'riskLevel', 'coordinates', 'address', 'tags',
               'photos', 'currentVibe', 'vibeUpdatedAt', 'updatedAt', 'status', 'deletedAt', 'visibility'];
     }
+    // Doc ids get interpolated into onclick handlers client-side; only allow plain ids.
+    function safeId(id) {
+      return id.matches('^[A-Za-z0-9_-]{1,64}$');
+    }
     function ownsLocation() {
       return request.auth != null && resource.data.createdBy == request.auth.uid;
     }
@@ -69,7 +73,7 @@ service cloud.firestore {
 
     match /locations/{locationId} {
       allow read: if true;
-      allow create: if request.auth != null &&
+      allow create: if request.auth != null && safeId(locationId) &&
                     request.resource.data.createdBy == request.auth.uid &&
                     validLocation(request.resource.data) &&
                     request.resource.data.get('visibility', 'public') == 'public';
@@ -80,13 +84,25 @@ service cloud.firestore {
 
     match /private_locations/{locationId} {
       allow read: if ownsLocation();
-      allow create: if request.auth != null &&
+      allow create: if request.auth != null && safeId(locationId) &&
                     request.resource.data.createdBy == request.auth.uid &&
                     validLocation(request.resource.data) &&
                     request.resource.data.visibility in ['followers', 'private'];
       allow update: if ownerUpdateOk() &&
                     request.resource.data.visibility in ['followers', 'private'];
       allow delete: if ownsLocation();
+    }
+
+    // Spot reports: one per user per location (doc id = locationId_uid).
+    // Write-only for users; moderators read them in the Firebase console.
+    match /location_reports/{reportId} {
+      allow create: if request.auth != null &&
+                    request.resource.data.reportedBy == request.auth.uid &&
+                    reportId == request.resource.data.locationId + '_' + request.auth.uid &&
+                    request.resource.data.reason in ['dangerous', 'gone', 'fake', 'wrong_pin', 'private_property', 'spam', 'other'] &&
+                    request.resource.data.note is string && request.resource.data.note.size() <= 500 &&
+                    request.resource.data.keys().hasOnly(['locationId', 'reason', 'note', 'reportedBy', 'createdAt']);
+      allow read, update, delete: if false;
     }
 
     // Ratings - authenticated users can read all ratings

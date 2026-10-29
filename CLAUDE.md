@@ -51,6 +51,10 @@ Both feed `applyLocationChanges()`, which applies `snap.docChanges()` incrementa
 
 Visibility is per-user (`user_settings.locationVisibility`: public / followers / private). **Public docs live in `locations` (world-readable); followers/private docs live in `private_locations` (owner-only in rules).** Use `locationCollection(visibility)`, `getLocationRef(id)` (finds a doc in either collection), `getOwnLocationDocs(uid)` and `setLocationVisibility(doc, v)` (moves docs between collections) in `locations.js` — never query `locations` alone when you mean "my locations". "Followers" is currently treated as owner-only; follower read access isn't implemented.
 
+### Explore features (`explore.js`)
+
+Nearest-spots list in the Area Ops panel (`renderNearby`, from GPS fix or map center), share links `/?loc=<id>` (`shareLocation`, `handleDeepLink`), and the report modal (`showReportModal` → `location_reports`).
+
 ### Firestore collections
 
 | Collection | Purpose |
@@ -65,8 +69,9 @@ Visibility is per-user (`user_settings.locationVisibility`: public / followers /
 | `user_badges` | Earned achievements |
 | `routes`, `groups`, `missions` | Gamification, partially stubbed |
 | `direct_messages` | Private messaging |
+| `location_reports` | User reports of bad spots, id `locationId_uid`, write-only (read in Firebase console) |
 
-Security rules: `locations` is public read, `private_locations` owner-only; `locations` rejects non-public visibility; all writes are gated on `auth.uid`. Location create/update is validated server-side (coordinate bounds, field presence, name pattern). Rate limiting helper in rules limits profile updates.
+Security rules: new location ids must match `^[A-Za-z0-9_-]{1,64}$` (ids are interpolated into onclick handlers); `locations` is public read, `private_locations` owner-only; `locations` rejects non-public visibility; all writes are gated on `auth.uid`. Location create/update is validated server-side (coordinate bounds, field presence, name pattern). Rate limiting helper in rules limits profile updates.
 
 ### Styles
 
@@ -79,13 +84,13 @@ Map-specific Leaflet overrides (popup, tooltip, zoom controls, cluster markers, 
 
 ### Map markers
 
-Location markers are diamond-shaped divIcons (`.ub-pin`) colored by `riskLevel` via CSS classes (`risk-safe` → `risk-extreme`). They have a CSS pulse ring animation. Cluster markers are styled black/yellow squares that scale to amber/red at medium/large counts. All marker and Leaflet UI CSS is in `components.css` under the `LEAFLET MAP THEME` section.
+Location markers are diamond-shaped divIcons (`.ub-pin`) colored by `riskLevel` via CSS classes (`risk-safe` → `risk-extreme`). They show a category icon (`explore.js:CATEGORY_ICONS`, Font Awesome 6.4) and a CSS pulse ring. Cluster markers are styled black/yellow squares that scale to amber/red at medium/large counts. All marker and Leaflet UI CSS is in `components.css` under the `LEAFLET MAP THEME` section.
 
 Tile layers (`map.js:_makeTileLayer`, all keyless): default = OSM, dark = OSM with `.leaflet-layer.tiles-dark` invert filter, terrain = OpenTopoMap. CARTO basemaps now require an API key — don't reintroduce them. OSM tile policy: keep attribution on, no bulk prefetching. A CSS filter on `.leaflet-tile-pane` adds the amber-noir tint.
 
 ### PWA / service worker
 
-Vite PWA plugin auto-generates the service worker. Caching strategy: CacheFirst for OSM/OpenTopoMap tiles (500 entries, 7-day TTL), NetworkFirst for Firestore. The manifest theme color is `#FFD000`.
+Vite PWA plugin auto-generates the service worker. Caching strategy: CacheFirst for OSM/OpenTopoMap tiles (2000 entries, 30-day TTL — viewed tiles only, never bulk prefetch), NetworkFirst for Firestore. The manifest theme color is `#FFD000`.
 
 ## Current development priorities
 

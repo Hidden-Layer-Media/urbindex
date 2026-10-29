@@ -176,6 +176,12 @@
               <button class="btn btn-primary area-ops-pin-btn" onclick="app.showAddLocationModal()">
                 <i class="fas fa-map-marker-alt"></i> drop pin here
               </button>
+              <div class="nearby-header">
+                <span><i class="fas fa-route"></i> nearest spots</span>
+                <button class="nearby-refresh" onclick="app.renderNearby()" title="Recalculate from map center"><i class="fas fa-rotate"></i></button>
+              </div>
+              <div class="nearby-origin" id="nearby-origin">from map center</div>
+              <div class="nearby-list" id="nearby-list"><div class="nearby-empty">loading...</div></div>
             </div>
           </div>
         </aside>

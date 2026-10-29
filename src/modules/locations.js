@@ -525,7 +525,11 @@ export const locationsMethods = {
           ${this.currentUser ? `<div class="flex gap-8 location-detail-actions">
             <button class="btn btn-primary" onclick="app.checkInLocation('${locationId}')"><i class="fas fa-map-marker-alt"></i> Check In</button>
             <button class="btn" onclick="app.likeLocation('${locationId}')"><i class="fas fa-heart"></i> Like</button>
-          </div>` : '<p class="text-muted small">Sign in for more actions.</p>'}
+            <button class="btn" onclick="app.shareLocation('${locationId}', ${this.escapeHtml(JSON.stringify(data.name || 'Urbindex spot'))})"><i class="fas fa-share-nodes"></i> Share</button>
+            ${data.createdBy !== this.currentUser.uid ? `<button class="btn btn-danger" onclick="app.showReportModal('${locationId}')"><i class="fas fa-flag"></i> Report</button>` : ''}
+          </div>` : `<div class="flex gap-8 location-detail-actions">
+            <button class="btn" onclick="app.shareLocation('${locationId}', ${this.escapeHtml(JSON.stringify(data.name || 'Urbindex spot'))})"><i class="fas fa-share-nodes"></i> Share</button>
+          </div><p class="text-muted small">Sign in for more actions.</p>`}
           <div class="detail-comments-section">
             <div class="detail-section-label">// COMMENTS</div>
             <div id="comments-${locationId}" class="location-detail-comments"></div>

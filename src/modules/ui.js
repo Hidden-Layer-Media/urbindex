@@ -182,7 +182,9 @@ export const uiMethods = {
     try {
       const [lat, lng] = await this.getUserLocation();
       this._setAreaOpsCoords(lat, lng);
+      this._lastFix = [lat, lng];
       this.map?.setView([lat, lng], 15);
+      this.renderNearby([lat, lng]);
     } catch (err) {
       if (coordEl) coordEl.textContent = '-- denied --';
     } finally {

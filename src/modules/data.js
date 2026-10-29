@@ -63,6 +63,7 @@ export const dataMethods = {
     this.markers.forEach(m => { const ts = m._ubData?.createdAt?.toDate?.(); if (ts && ts >= todayStart) todayCount++; });
     const todayEl = document.getElementById('new-today-count');
     if (todayEl) todayEl.textContent = todayCount;
+    this.renderNearby();
   },
 
   buildLocationMarker(doc) {
@@ -74,8 +75,8 @@ export const dataMethods = {
       const marker = L.marker([lat, lng], {
         icon: L.divIcon({
           className: 'ub-pin-wrap',
-          html: `<div class="ub-pin risk-${data.riskLevel || 'unknown'}"><span class="ub-pin-ring"></span></div>`,
-          iconSize: [24, 24], iconAnchor: [12, 12],
+          html: `<div class="ub-pin risk-${this.escapeHtml(data.riskLevel || 'unknown')}"><i class="fas ${this.categoryIcon(data.category)} ub-pin-icon"></i><span class="ub-pin-ring"></span></div>`,
+          iconSize: [30, 30], iconAnchor: [15, 15],
         }),
       }).bindTooltip(this.buildLocationTooltip(data), {
         direction: 'top', offset: [0, -14], className: 'ub-tooltip', sticky: false,
@@ -124,6 +125,7 @@ export const dataMethods = {
     const isOwner = this.currentUser?.uid === data.createdBy;
     const actions = `<div class="map-popup-actions">
       <button class="btn btn-sm btn-primary" onclick="app.showLocationDetailModal('${docId}')"><i class="fas fa-eye"></i> Details</button>
+      <button class="btn btn-sm" title="Share link" onclick="app.shareLocation('${docId}')"><i class="fas fa-share-nodes"></i></button>
       ${this.currentUser
         ? `<button class="btn btn-sm btn-success" onclick="app.checkInLocation('${docId}')"><i class="fas fa-map-marker-alt"></i> Check In</button>
            ${isOwner ? `<button class="btn btn-sm" onclick="app.editLocation('${docId}')"><i class="fas fa-edit"></i></button>

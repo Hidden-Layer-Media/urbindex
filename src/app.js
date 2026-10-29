@@ -12,6 +12,7 @@ import { forumMethods } from './modules/forum.js';
 import { gamificationMethods } from './modules/gamification.js';
 import { messageMethods } from './modules/messaging.js';
 import { searchMethods } from './modules/search.js';
+import { exploreMethods } from './modules/explore.js';
 
 class UrbindexApp {
   constructor() {
@@ -56,6 +57,7 @@ class UrbindexApp {
 
       // Start loading data right away — map is already ready
       this.loadData();
+      this.handleDeepLink();
 
       // Locate user in the background and pan map when found
       this._locateUserBackground();
@@ -88,7 +90,8 @@ Object.assign(UrbindexApp.prototype,
   forumMethods,
   gamificationMethods,
   messageMethods,
-  searchMethods
+  searchMethods,
+  exploreMethods
 );
 
 export { UrbindexApp };
