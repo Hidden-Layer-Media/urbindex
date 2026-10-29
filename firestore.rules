@@ -48,25 +48,47 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Locations - authenticated read/write with proper validation
+    // Locations. Public spots live in `locations` (world-readable).
+    // Followers-only / private spots live in `private_locations` (owner-only).
+    function validLocation(d) {
+      return d.keys().hasAll(['name', 'coordinates', 'createdBy']) &&
+             d.coordinates is list && d.coordinates.size() == 2;
+    }
+    function ownerEditableKeys() {
+      return ['name', 'description', 'category', 'riskLevel', 'coordinates', 'address', 'tags',
+              'photos', 'currentVibe', 'vibeUpdatedAt', 'updatedAt', 'status', 'deletedAt', 'visibility'];
+    }
+    function ownsLocation() {
+      return request.auth != null && resource.data.createdBy == request.auth.uid;
+    }
+    function ownerUpdateOk() {
+      return ownsLocation() &&
+             request.resource.data.createdBy == resource.data.createdBy &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(ownerEditableKeys());
+    }
+
     match /locations/{locationId} {
-      allow read: if true; // Allow public access to view locations
+      allow read: if true;
       allow create: if request.auth != null &&
                     request.resource.data.createdBy == request.auth.uid &&
-                    request.resource.data.keys().hasAll(['name', 'coordinates', 'createdBy']) &&
-                    request.resource.data.coordinates is list &&
-                    request.resource.data.coordinates.size() == 2;
-      allow update: if request.auth != null && (
-                    resource.data.createdBy == request.auth.uid ||
-                    // Allow only server-side managed counter increments via transactions
-                    false
-                    ) &&
-                    (resource.data.createdBy != request.auth.uid || 
-                     request.resource.data.diff(resource.data).affectedKeys()
-                      .hasOnly(['name', 'description', 'category', 'riskLevel', 'coordinates', 'address', 'tags', 'updatedAt', 'status']));
-      allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+                    validLocation(request.resource.data) &&
+                    request.resource.data.get('visibility', 'public') == 'public';
+      allow update: if ownerUpdateOk() &&
+                    request.resource.data.get('visibility', 'public') == 'public';
+      allow delete: if ownsLocation();
     }
-    
+
+    match /private_locations/{locationId} {
+      allow read: if ownsLocation();
+      allow create: if request.auth != null &&
+                    request.resource.data.createdBy == request.auth.uid &&
+                    validLocation(request.resource.data) &&
+                    request.resource.data.visibility in ['followers', 'private'];
+      allow update: if ownerUpdateOk() &&
+                    request.resource.data.visibility in ['followers', 'private'];
+      allow delete: if ownsLocation();
+    }
+
     // Ratings - authenticated users can read all ratings
     // Users can only create, update, or delete their own ratings
     match /ratings/{ratingId} {

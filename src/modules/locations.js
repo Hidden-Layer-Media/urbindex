@@ -37,6 +37,49 @@ export const locationsMethods = {
     this.clearTags();
   },
 
+  // Public spots live in `locations` (world-readable). Followers-only and private spots live in
+  // `private_locations`, which firestore.rules only lets the owner read.
+  locationCollection(visibility) {
+    return !visibility || visibility === 'public' ? 'locations' : 'private_locations';
+  },
+
+  // Find a location doc in whichever collection holds it.
+  async getLocationRef(id) {
+    const pubRef = this.db.collection('locations').doc(id);
+    const pubDoc = await pubRef.get();
+    if (pubDoc.exists || !this.currentUser) return { ref: pubRef, doc: pubDoc };
+    const privRef = this.db.collection('private_locations').doc(id);
+    try {
+      const privDoc = await privRef.get();
+      if (privDoc.exists) return { ref: privRef, doc: privDoc };
+    } catch { /* not ours or doesn't exist */ }
+    return { ref: pubRef, doc: pubDoc };
+  },
+
+  // All of a user's own locations from both collections (only works for the signed-in user's uid).
+  async getOwnLocationDocs(uid, { activeOnly = true } = {}) {
+    const q = col => {
+      let ref = this.db.collection(col).where('createdBy', '==', uid);
+      if (activeOnly) ref = ref.where('status', '==', 'active');
+      return ref.get();
+    };
+    const [pub, priv] = await Promise.all([q('locations'), q('private_locations').catch(() => null)]);
+    return [...pub.docs, ...(priv ? priv.docs : [])];
+  },
+
+  // Move a location between the public and private collections, keeping its id.
+  async setLocationVisibility(doc, visibility) {
+    const target = this.locationCollection(visibility);
+    if (doc.ref.parent.id === target) {
+      await doc.ref.update({ visibility, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      return;
+    }
+    const batch = this.db.batch();
+    batch.set(this.db.collection(target).doc(doc.id), { ...doc.data(), visibility, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    batch.delete(doc.ref);
+    await batch.commit();
+  },
+
   async handleLocationSubmit(e) {
     e.preventDefault();
     const opKey = 'location-submit';
@@ -93,7 +136,9 @@ export const locationsMethods = {
     try {
       const editId = e.target.dataset.editId;
       if (editId) {
-        await this.db.collection('locations').doc(editId).update(payload);
+        const { ref, doc } = await this.getLocationRef(editId);
+        if (!doc.exists) throw { code: 'not-found' };
+        await ref.update(payload);
         this.showToast('Location updated successfully!', 'success');
       } else {
         payload.createdBy = this.currentUser.uid;
@@ -101,7 +146,7 @@ export const locationsMethods = {
         payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
         payload.status = 'active';
         payload.visibility = this._locationVisibility || 'public';
-        await this.db.collection('locations').add(payload);
+        await this.db.collection(this.locationCollection(payload.visibility)).add(payload);
         this.showToast('Location added successfully!', 'success');
         await this.updateUserBadges(this.currentUser.uid, 'add_location');
         this.updateUserXP(this.currentUser.uid, 'add_location');
@@ -131,7 +176,8 @@ export const locationsMethods = {
     if (this.activeOperations.has(opKey)) return;
     this.activeOperations.add(opKey);
     try {
-      await this.db.collection('locations').doc(id).update({ status: 'deleted', deletedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      const { ref } = await this.getLocationRef(id);
+      await ref.update({ status: 'deleted', deletedAt: firebase.firestore.FieldValue.serverTimestamp() });
       this.loadUserLocations(); this.loadStats();
       this.showToast('Location deleted successfully', 'success');
     } catch { this.showToast('Failed to delete location. Please try again.', 'error'); }
@@ -140,7 +186,7 @@ export const locationsMethods = {
 
   async editLocation(id) {
     try {
-      const doc = await this.db.collection('locations').doc(id).get();
+      const { doc } = await this.getLocationRef(id);
       if (!doc.exists) { this.showToast('Location not found', 'error'); return; }
       const data = doc.data();
       if (data.createdBy !== this.currentUser.uid) { this.showToast('You can only edit your own locations', 'error'); return; }
@@ -183,10 +229,11 @@ export const locationsMethods = {
     }
     grid.innerHTML = '<div class="loading">Loading your locations...</div>';
     try {
-      const snap = await this.db.collection('locations').where('createdBy', '==', this.currentUser.uid).where('status', '==', 'active').orderBy('createdAt', 'desc').get();
-      if (snap.empty) { grid.innerHTML = '<div class="empty-state"><i class="fas fa-map-marker-alt"></i><p>No locations yet — drop your first spot from the map.</p></div>'; return; }
+      const docs = await this.getOwnLocationDocs(this.currentUser.uid);
+      docs.sort((a, b) => (b.data().createdAt?.toMillis?.() || 0) - (a.data().createdAt?.toMillis?.() || 0));
+      if (!docs.length) { grid.innerHTML = '<div class="empty-state"><i class="fas fa-map-marker-alt"></i><p>No locations yet — drop your first spot from the map.</p></div>'; return; }
       this.allUserLocations = [];
-      snap.forEach(doc => this.allUserLocations.push({ id: doc.id, data: doc.data() }));
+      docs.forEach(doc => this.allUserLocations.push({ id: doc.id, data: doc.data() }));
       this.renderFilteredLocations();
       this.setupSearchAndFilters();
     } catch { grid.innerHTML = '<div class="error">Failed to load locations</div>'; }
@@ -420,7 +467,7 @@ export const locationsMethods = {
   },
 
   showLocationDetailModal(locationId) {
-    this.db.collection('locations').doc(locationId).get().then(doc => {
+    this.getLocationRef(locationId).then(({ doc }) => {
       if (!doc.exists) return;
       const data = doc.data();
       const modal = document.getElementById('location-detail-modal');

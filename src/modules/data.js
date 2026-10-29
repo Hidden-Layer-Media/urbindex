@@ -25,42 +25,67 @@ export const dataMethods = {
       this.map.addLayer(this.markerClusterGroup);
     }
 
+    // Rebuild from scratch on each (re)subscribe, e.g. after sign-in, so owner buttons are right.
     this.unsubLocations?.();
-    this.unsubLocations = this.db.collection('locations').where('status', '==', 'active').onSnapshot(snap => {
-      this.markerClusterGroup?.clearLayers();
-      this.markers.clear();
-      const valid = [];
-      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-      let todayCount = 0;
-      snap.forEach(doc => {
-        try {
-          const data = doc.data();
-          if (!Array.isArray(data.coordinates) || data.coordinates.length !== 2) return;
-          const [lat, lng] = data.coordinates;
-          if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
-          if (data.visibility === 'private' && data.createdBy !== this.currentUser?.uid) return;
-          const ts = data.createdAt?.toDate?.();
-          if (ts && ts >= todayStart) todayCount++;
-          const marker = L.marker([lat, lng], {
-            icon: L.divIcon({
-              className: 'ub-pin-wrap',
-              html: `<div class="ub-pin risk-${data.riskLevel || 'unknown'}"><span class="ub-pin-ring"></span></div>`,
-              iconSize: [24, 24], iconAnchor: [12, 12],
-            }),
-          }).bindTooltip(this.buildLocationTooltip(data), {
-            direction: 'top', offset: [0, -14], className: 'ub-tooltip', sticky: false,
-          }).bindPopup(this.createLocationPopup(data, doc.id));
-          valid.push(marker);
-          this.markers.set(doc.id, marker);
-        } catch {}
-      });
-      valid.forEach(m => this.markerClusterGroup?.addLayer(m));
-      const todayEl = document.getElementById('new-today-count');
-      if (todayEl) todayEl.textContent = todayCount;
-    }, err => {
+    this.unsubPrivateLocations?.();
+    this.markerClusterGroup.clearLayers();
+    this.markers.clear();
+
+    const onErr = err => {
       const msgs = { 'permission-denied': 'Please sign in to view locations', 'unavailable': 'Network error. Please check your connection.' };
       this.showToast(msgs[err.code] || 'Failed to load locations', 'error');
+    };
+    this.unsubLocations = this.db.collection('locations').where('status', '==', 'active')
+      .onSnapshot(snap => this.applyLocationChanges(snap), onErr);
+    if (this.currentUser) {
+      this.unsubPrivateLocations = this.db.collection('private_locations')
+        .where('createdBy', '==', this.currentUser.uid).where('status', '==', 'active')
+        .onSnapshot(snap => this.applyLocationChanges(snap), err => console.warn('private locations:', err.code));
+    }
+  },
+
+  // Only touch the pins that changed instead of rebuilding the whole map on every update.
+  applyLocationChanges(snap) {
+    const toAdd = [], toRemove = [];
+    snap.docChanges().forEach(change => {
+      const id = change.doc.id;
+      const old = this.markers.get(id);
+      if (old) { toRemove.push(old); this.markers.delete(id); }
+      if (change.type === 'removed') return;
+      const marker = this.buildLocationMarker(change.doc);
+      if (marker) { toAdd.push(marker); this.markers.set(id, marker); }
     });
+    if (toRemove.length) this.markerClusterGroup?.removeLayers(toRemove);
+    if (toAdd.length) this.markerClusterGroup?.addLayers(toAdd);
+
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    let todayCount = 0;
+    this.markers.forEach(m => { const ts = m._ubData?.createdAt?.toDate?.(); if (ts && ts >= todayStart) todayCount++; });
+    const todayEl = document.getElementById('new-today-count');
+    if (todayEl) todayEl.textContent = todayCount;
+  },
+
+  buildLocationMarker(doc) {
+    try {
+      const data = doc.data();
+      if (!Array.isArray(data.coordinates) || data.coordinates.length !== 2) return null;
+      const [lat, lng] = data.coordinates;
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+      const marker = L.marker([lat, lng], {
+        icon: L.divIcon({
+          className: 'ub-pin-wrap',
+          html: `<div class="ub-pin risk-${data.riskLevel || 'unknown'}"><span class="ub-pin-ring"></span></div>`,
+          iconSize: [24, 24], iconAnchor: [12, 12],
+        }),
+      }).bindTooltip(this.buildLocationTooltip(data), {
+        direction: 'top', offset: [0, -14], className: 'ub-tooltip', sticky: false,
+      }).bindPopup(this.createLocationPopup(data, doc.id));
+      marker._ubData = data;
+      return marker;
+    } catch (err) {
+      console.warn('bad location doc', doc.id, err);
+      return null;
+    }
   },
 
   buildLocationTooltip(data) {
@@ -187,8 +212,7 @@ export const dataMethods = {
     try {
       const snap = await this.db.collection('user_badges').where('userId', '==', userId).get();
       const badgeIds = snap.docs.map(d => d.data().badgeId);
-      const locSnap = await this.db.collection('locations').where('createdBy', '==', userId).where('status', '==', 'active').get();
-      const locCount = locSnap.size;
+      const locCount = (await this.getOwnLocationDocs(userId)).length;
 
       const toAward = [];
       if (locCount >= 1 && !badgeIds.includes('first_location')) toAward.push('first_location');
@@ -586,12 +610,12 @@ export const dataMethods = {
     try {
       const uid = this.currentUser.uid;
       const [locsSnap, followSnap, visitsSnap] = await Promise.all([
-        this.db.collection('locations').where('createdBy', '==', uid).where('status', '==', 'active').get(),
+        this.getOwnLocationDocs(uid),
         this.db.collection('user_followers').where('followerId', '==', uid).get(),
         this.db.collection('location_visits').where('userId', '==', uid).get(),
       ]);
-      const locCount = locsSnap.size;
-      const locWithDesc = locsSnap.docs.filter(d => (d.data().description || '').length >= 30).length;
+      const locCount = locsSnap.length;
+      const locWithDesc = locsSnap.filter(d => (d.data().description || '').length >= 30).length;
       const followCount = followSnap.size;
       const visitCount = visitsSnap.size;
 
@@ -627,7 +651,7 @@ export const dataMethods = {
   },
 
   showLocationPhotos(locationId) {
-    this.db.collection('locations').doc(locationId).get().then(doc => {
+    this.getLocationRef(locationId).then(({ doc }) => {
       if (!doc.exists) return;
       const d = doc.data();
       if (!d.photos?.length) return;
@@ -636,7 +660,7 @@ export const dataMethods = {
   },
 
   showLocationPhotoModal(locationId, idx) {
-    this.db.collection('locations').doc(locationId).get().then(doc => {
+    this.getLocationRef(locationId).then(({ doc }) => {
       if (!doc.exists) return;
       const d = doc.data();
       if (!d.photos?.[idx]) return;

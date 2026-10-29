@@ -213,13 +213,9 @@ export const settingsMethods = {
     };
     try {
       await this.db.collection('user_settings').doc(this.currentUser.uid).set(payload, { merge: true });
-      // Propagate visibility change to all user's locations
-      const locSnap = await this.db.collection('locations').where('createdBy', '==', this.currentUser.uid).where('status', '==', 'active').get();
-      if (!locSnap.empty) {
-        const batch = this.db.batch();
-        locSnap.forEach(doc => batch.update(doc.ref, { visibility: locationVisibility }));
-        await batch.commit();
-      }
+      // Apply to all of the user's locations, moving them between public/private collections as needed
+      const docs = await this.getOwnLocationDocs(this.currentUser.uid);
+      for (const doc of docs) await this.setLocationVisibility(doc, locationVisibility);
       this._locationVisibility = locationVisibility;
       this.showToast('Privacy settings updated!', 'success');
     } catch { this.showToast('Failed to update privacy settings', 'error'); }
@@ -325,6 +321,7 @@ export const settingsMethods = {
       
       const colls = [
         { name: 'locations', fields: ['createdBy'] },
+        { name: 'private_locations', fields: ['createdBy'] },
         { name: 'forum', fields: ['createdBy'] },
         { name: 'comments', fields: ['createdBy'] },
         { name: 'user_followers', fields: ['followerId', 'followingId'] },
@@ -377,7 +374,7 @@ export const settingsMethods = {
       const uid = this.currentUser.uid;
       const [userDoc, locsSnap, forumSnap, commentsSnap, followersSnap, followingSnap, badgesSnap] = await Promise.all([
         this.db.collection('users').doc(uid).get(),
-        this.db.collection('locations').where('createdBy', '==', uid).get(),
+        this.getOwnLocationDocs(uid, { activeOnly: false }),
         this.db.collection('forum').where('createdBy', '==', uid).get(),
         this.db.collection('comments').where('createdBy', '==', uid).get(),
         this.db.collection('user_followers').where('followingId', '==', uid).get(),
@@ -388,7 +385,7 @@ export const settingsMethods = {
         exportDate: new Date().toISOString(),
         user: { uid, email: this.currentUser.email, displayName: this.currentUser.displayName, photoURL: this.currentUser.photoURL, emailVerified: this.currentUser.emailVerified, createdAt: this.currentUser.metadata?.creationTime, lastSignIn: this.currentUser.metadata?.lastSignInTime },
         profile: userDoc.exists ? userDoc.data() : {},
-        locations: locsSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+        locations: locsSnap.map(d => ({ id: d.id, ...d.data() })),
         posts: forumSnap.docs.map(d => ({ id: d.id, ...d.data() })),
         comments: commentsSnap.docs.map(d => ({ id: d.id, ...d.data() })),
         followers: followersSnap.docs.map(d => d.data().followerId),
@@ -407,9 +404,9 @@ export const settingsMethods = {
   async calculateStorageUsage() {
     if (!this.currentUser) return;
     try {
-      const snap = await this.db.collection('locations').where('createdBy', '==', this.currentUser.uid).get();
+      const docs = await this.getOwnLocationDocs(this.currentUser.uid, { activeOnly: false });
       let size = 0;
-      snap.forEach(doc => { size += new Blob([JSON.stringify(doc.data())]).size; });
+      docs.forEach(doc => { size += new Blob([JSON.stringify(doc.data())]).size; });
       const el = document.getElementById('storage-used');
       if (el) el.textContent = size > 1024 * 1024 ? `${(size / 1024 / 1024).toFixed(2)} MB` : `${(size / 1024).toFixed(2)} KB`;
     } catch { const el = document.getElementById('storage-used'); if (el) el.textContent = 'Unknown'; }

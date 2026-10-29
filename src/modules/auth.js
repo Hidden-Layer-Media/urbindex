@@ -5,6 +5,7 @@ export const authMethods = {
     this.auth.onAuthStateChanged(user => {
       this.currentUser = user;
       this.updateAuthUI();
+      this.loadLocations();
       this.loadActivity();
       this.loadStats();
       if (user) {
