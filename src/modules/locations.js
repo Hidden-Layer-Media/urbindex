@@ -341,57 +341,39 @@ export const locationsMethods = {
     });
   },
 
+  // Like/unlike toggle. The like doc and the counter change go in one batch so the rules can verify it.
   async likeLocation(locationId) {
     if (!this.currentUser) { this.showToast('Sign in to like locations', 'warning'); return; }
     const opKey = `like-${locationId}`;
     if (this.activeOperations.has(opKey)) return;
     this.activeOperations.add(opKey);
     try {
-      const ref = this.db.collection('location_likes').doc(`${this.currentUser.uid}_${locationId}`);
-      await ref.set({ userId: this.currentUser.uid, locationId, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-      await this.db.collection('locations').doc(locationId).update({ likesCount: firebase.firestore.FieldValue.increment(1) });
-      this.showToast('Location liked!', 'success');
-    } catch { this.showToast('Failed to like location', 'error'); }
+      const likeRef = this.db.collection('location_likes').doc(`${this.currentUser.uid}_${locationId}`);
+      const locRef = this.db.collection('locations').doc(locationId);
+      const liked = (await likeRef.get()).exists;
+      const batch = this.db.batch();
+      if (liked) batch.delete(likeRef);
+      else batch.set(likeRef, { userId: this.currentUser.uid, locationId, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      batch.update(locRef, { likesCount: firebase.firestore.FieldValue.increment(liked ? -1 : 1) });
+      await batch.commit();
+      this.showToast(liked ? 'Like removed' : 'Location liked!', 'success');
+    } catch (err) { console.warn('[urbindex] like', err); this.showToast('Failed to like location', 'error'); }
     finally { this.activeOperations.delete(opKey); }
   },
 
-  async unlikeLocation(locationId) {
-    if (!this.currentUser) return;
-    const opKey = `unlike-${locationId}`;
-    if (this.activeOperations.has(opKey)) return;
-    this.activeOperations.add(opKey);
-    try {
-      await this.db.collection('location_likes').doc(`${this.currentUser.uid}_${locationId}`).delete();
-      await this.db.collection('locations').doc(locationId).update({ likesCount: firebase.firestore.FieldValue.increment(-1) });
-    } catch { this.showToast('Failed to unlike location', 'error'); }
-    finally { this.activeOperations.delete(opKey); }
-  },
+  unlikeLocation(locationId) { return this.likeLocation(locationId); },
 
   async rateLocation(locationId, value) {
     if (!this.currentUser) { this.showToast('Sign in to rate locations', 'warning'); return; }
     try {
       const ratingRef = this.db.collection('ratings').doc(`${this.currentUser.uid}_${locationId}`);
-      const locationRef = this.db.collection('locations').doc(locationId);
 
-      await this.db.runTransaction(async (transaction) => {
-        const ratingDoc = await transaction.get(ratingRef);
-        const oldValue = ratingDoc.exists ? (ratingDoc.data().value || 0) : 0;
-        const delta = value - oldValue;
-
-        transaction.set(ratingRef, {
-          userId: this.currentUser.uid,
-          locationId,
-          value,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        if (delta !== 0) {
-          transaction.update(locationRef, {
-            likesCount: firebase.firestore.FieldValue.increment(delta)
-          });
-        }
+      await ratingRef.set({
+        userId: this.currentUser.uid,
+        locationId,
+        value,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      
       this.loadLocationRating(locationId);
       this.showToast(value > 0 ? 'Upvoted!' : 'Downvoted', 'success');
     } catch { this.showToast('Failed to rate location', 'error'); }
@@ -410,15 +392,21 @@ export const locationsMethods = {
     if (!this.currentUser) { this.showToast('Sign in to comment', 'warning'); return; }
     if (!text?.trim()) { this.showToast('Comment cannot be empty', 'warning'); return; }
     try {
-      await this.db.collection('location_comments').add({
+      const commentRef = this.db.collection('location_comments').doc();
+      const batch = this.db.batch();
+      batch.set(commentRef, {
         locationId, text: this.sanitizeInput(text.trim()),
         userId: this.currentUser.uid,
         displayName: this.currentUser.displayName || 'Explorer',
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       });
-      await this.db.collection('locations').doc(locationId).update({
-        commentCount: firebase.firestore.FieldValue.increment(1)
+      batch.update(this.db.collection('locations').doc(locationId), {
+        commentCount: firebase.firestore.FieldValue.increment(1),
+        lastCommentId: commentRef.id,
       });
+      await batch.commit();
+      const input = document.getElementById(`comment-input-${locationId}`);
+      if (input) input.value = '';
       this.updateUserXP(this.currentUser.uid, 'add_comment');
       this.loadLocationComments(locationId);
     } catch { this.showToast('Failed to add comment', 'error'); }
@@ -448,21 +436,26 @@ export const locationsMethods = {
     this.activeOperations.add(opKey);
     try {
       const locationRef = this.db.collection('locations').doc(locationId);
-      const visitRef = this.db.collection('location_visits').doc();
+      // One check-in per spot per UTC day; the id format is enforced in firestore.rules.
+      const day = Math.floor(Date.now() / 86400000);
+      const visitRef = this.db.collection('location_visits').doc(`${locationId}_${this.currentUser.uid}_${day}`);
 
-      await this.db.runTransaction(async (transaction) => {
+      const already = await this.db.runTransaction(async (transaction) => {
+        if ((await transaction.get(visitRef)).exists) return true;
         transaction.set(visitRef, {
           locationId, userId: this.currentUser.uid,
           displayName: this.currentUser.displayName || 'Explorer',
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         });
-        transaction.update(locationRef, { visitCount: firebase.firestore.FieldValue.increment(1) });
+        transaction.update(locationRef, { visitCount: firebase.firestore.FieldValue.increment(1), lastVisitId: visitRef.id });
+        return false;
       });
+      if (already) { this.showToast('Already checked in here today', 'info'); return; }
 
       await this.updateUserBadges(this.currentUser.uid, 'check_in');
       this.updateUserXP(this.currentUser.uid, 'check_in');
       this.showToast('Checked in!', 'success');
-    } catch { this.showToast('Failed to check in', 'error'); }
+    } catch (err) { console.warn('[urbindex] check-in', err); this.showToast('Failed to check in', 'error'); }
     finally { this.activeOperations.delete(opKey); }
   },
 
@@ -558,7 +551,8 @@ export const locationsMethods = {
 
       batch.update(locRef, {
         currentVibe: vibe,
-        vibeUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        vibeUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastStatusUpdateId: updateRef.id,
       });
 
       batch.set(updateRef, {
@@ -573,7 +567,8 @@ export const locationsMethods = {
       this.showToast(`Status updated to ${vibe.replace('_', ' ')}`, 'success');
       this.showLocationDetailModal(locationId);
       this.updateUserXP(this.currentUser.uid, 'add_comment'); // Award minor XP for status updates
-    } catch {
+    } catch (err) {
+      console.warn('[urbindex] status', err);
       this.showToast('Failed to update status', 'error');
     } finally {
       this.activeOperations.delete(opKey);
