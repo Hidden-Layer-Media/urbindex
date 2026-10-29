@@ -57,3 +57,5 @@ images/screenshots/*.jpg
 # Default avatar (should be added manually)
 images/default-avatar.png
 .qodo
+test-results/
+playwright-report/
