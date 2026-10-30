@@ -69,5 +69,5 @@ BE GOOD!!
 ---
 
 **Status**: production
-**Live**: https://urbindex-d69e1.web.app/
-**Last Updated**: 2026-05-20
+**Live**: https://urbindex.com/
+**Last Updated**: 2026-10-30
