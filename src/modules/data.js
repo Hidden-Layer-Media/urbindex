@@ -99,7 +99,9 @@ export const dataMethods = {
       <div class="ub-tip-name">${name}</div>
       <div class="ub-tip-meta">// ${cat} &nbsp;<span class="risk risk-${data.riskLevel || 'unknown'}">${risk}</span></div>
       ${vibeHtml}
-      <div class="ub-tip-stats"><i class="fas fa-eye"></i> ${data.visitCount || 0} &nbsp;<i class="fas fa-heart"></i> ${data.likesCount || 0}</div>
+      ${this.isPrivateLocation(data)
+        ? '<div class="ub-tip-stats"><i class="fas fa-lock"></i> private</div>'
+        : `<div class="ub-tip-stats"><i class="fas fa-eye"></i> ${data.visitCount || 0} &nbsp;<i class="fas fa-heart"></i> ${data.likesCount || 0}</div>`}
     </div>`;
   },
 
@@ -123,11 +125,12 @@ export const dataMethods = {
       ? `<div class="popup-tags">${data.tags.slice(0,4).map(t => `<span class="popup-tag">${this.escapeHtml(t)}</span>`).join('')}</div>`
       : '';
     const isOwner = this.currentUser?.uid === data.createdBy;
+    const isPrivate = this.isPrivateLocation(data);
     const actions = `<div class="map-popup-actions">
       <button class="btn btn-sm btn-primary" onclick="app.showLocationDetailModal('${docId}')"><i class="fas fa-eye"></i> Details</button>
-      <button class="btn btn-sm" title="Share link" onclick="app.shareLocation('${docId}')"><i class="fas fa-share-nodes"></i></button>
+      ${isPrivate ? '' : `<button class="btn btn-sm" title="Share link" onclick="app.shareLocation('${docId}')"><i class="fas fa-share-nodes"></i></button>`}
       ${this.currentUser
-        ? `<button class="btn btn-sm btn-success" onclick="app.checkInLocation('${docId}')"><i class="fas fa-map-marker-alt"></i> Check In</button>
+        ? `${isPrivate ? '' : `<button class="btn btn-sm btn-success" onclick="app.checkInLocation('${docId}')"><i class="fas fa-map-marker-alt"></i> Check In</button>`}
            ${isOwner ? `<button class="btn btn-sm" onclick="app.editLocation('${docId}')"><i class="fas fa-edit"></i></button>
                         <button class="btn btn-sm btn-danger" onclick="app.deleteLocation('${docId}',this)"><i class="fas fa-trash"></i></button>` : ''}`
         : ''}
@@ -138,14 +141,15 @@ export const dataMethods = {
         <div class="map-popup-desc">${desc}</div>
         <div class="map-popup-meta">
           <span class="popup-cat-chip">${cat}</span>
+          ${isPrivate ? '<span class="popup-cat-chip private-chip"><i class="fas fa-lock"></i> private</span>' : ''}
           <span class="risk risk-${data.riskLevel || 'unknown'}">${data.riskLevel || 'unknown'}</span>
           ${vibeBadge}
         </div>
         ${photos}${tags}
         <div class="popup-stats">
           <span><i class="fas fa-calendar"></i> ${date}</span>
-          <span><i class="fas fa-eye"></i> ${data.visitCount || 0}</span>
-          <span><i class="fas fa-heart"></i> ${data.likesCount || 0}</span>
+          ${isPrivate ? '' : `<span><i class="fas fa-eye"></i> ${data.visitCount || 0}</span>
+          <span><i class="fas fa-heart"></i> ${data.likesCount || 0}</span>`}
         </div>
         ${actions}
       </div>`;

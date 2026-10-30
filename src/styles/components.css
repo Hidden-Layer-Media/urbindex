@@ -4370,3 +4370,7 @@ select.select:focus {
 /* ── Report modal ── */
 .report-form { display: flex; flex-direction: column; gap: 6px; }
 .report-reason { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }
+
+/* Private spot marker in popups / detail */
+.private-chip { color: #aaa; border-color: rgba(170, 170, 170, 0.4); }
+.private-chip i { margin-right: 4px; }

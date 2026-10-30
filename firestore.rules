@@ -71,14 +71,59 @@ service cloud.firestore {
              request.resource.data.diff(resource.data).affectedKeys().hasOnly(ownerEditableKeys());
     }
 
+    // ── Community counters on public locations ──
+    // Anyone signed in may bump a counter by exactly 1, but only in the same batch that
+    // creates (or removes) the matching proof doc, so counts can't be faked.
+    function docPath(col, id) {
+      return /databases/$(database)/documents/$(col)/$(id);
+    }
+    function onlyChanged(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+    function stepped(field, step) {
+      return request.resource.data.get(field, 0) == resource.data.get(field, 0) + step;
+    }
+    function likeToggleOk(locationId) {
+      let p = docPath('location_likes', request.auth.uid + '_' + locationId);
+      return onlyChanged(['likesCount']) && (
+        (stepped('likesCount', 1) && !exists(p) && existsAfter(p)) ||
+        (stepped('likesCount', -1) && exists(p) && !existsAfter(p)));
+    }
+    // New doc `col/<idField>` created in this batch by this user for this location.
+    function freshProof(col, idField, locationId) {
+      let p = docPath(col, request.resource.data[idField]);
+      return !exists(p) && existsAfter(p) &&
+             getAfter(p).data.locationId == locationId &&
+             getAfter(p).data.userId == request.auth.uid;
+    }
+    function commentOk(locationId) {
+      return onlyChanged(['commentCount', 'lastCommentId']) && stepped('commentCount', 1) &&
+             freshProof('location_comments', 'lastCommentId', locationId);
+    }
+    function visitOk(locationId) {
+      return onlyChanged(['visitCount', 'lastVisitId']) && stepped('visitCount', 1) &&
+             freshProof('location_visits', 'lastVisitId', locationId);
+    }
+    function vibeOk(locationId) {
+      return onlyChanged(['currentVibe', 'vibeUpdatedAt', 'lastStatusUpdateId']) &&
+             request.resource.data.vibeUpdatedAt == request.time &&
+             freshProof('location_status_updates', 'lastStatusUpdateId', locationId) &&
+             getAfter(docPath('location_status_updates', request.resource.data.lastStatusUpdateId)).data.vibe == request.resource.data.currentVibe;
+    }
+    function communityUpdateOk(locationId) {
+      return request.auth != null && (
+        likeToggleOk(locationId) || commentOk(locationId) || visitOk(locationId) || vibeOk(locationId));
+    }
+
     match /locations/{locationId} {
       allow read: if true;
       allow create: if request.auth != null && safeId(locationId) &&
                     request.resource.data.createdBy == request.auth.uid &&
                     validLocation(request.resource.data) &&
                     request.resource.data.get('visibility', 'public') == 'public';
-      allow update: if ownerUpdateOk() &&
-                    request.resource.data.get('visibility', 'public') == 'public';
+      allow update: if (ownerUpdateOk() &&
+                     request.resource.data.get('visibility', 'public') == 'public') ||
+                    communityUpdateOk(locationId);
       allow delete: if ownsLocation();
     }
 
@@ -257,7 +302,8 @@ service cloud.firestore {
     // Users can only manage their own likes
     match /location_likes/{likeId} {
       allow read: if true; // Allow public read for like counts
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid &&
+                    likeId == request.auth.uid + '_' + request.resource.data.locationId;
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
 
@@ -279,10 +325,23 @@ service cloud.firestore {
 
     // Location visits/check-ins - authenticated users can read all visits
     // Users can only create their own visits
+    // Check-ins: one per user per location per UTC day (id = locationId_uid_dayNumber).
     match /location_visits/{visitId} {
       allow read: if true; // Allow public access to view location visits
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid &&
+                    visitId in [
+                      request.resource.data.locationId + '_' + request.auth.uid + '_' + string(int(request.time.toMillis() / 86400000)),
+                      request.resource.data.locationId + '_' + request.auth.uid + '_' + string(int(request.time.toMillis() / 86400000) - 1),
+                      request.resource.data.locationId + '_' + request.auth.uid + '_' + string(int(request.time.toMillis() / 86400000) + 1)
+                    ];
+    }
+
+    // Quiet / busy / security reports for a location.
+    match /location_status_updates/{updateId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid &&
+                    request.resource.data.vibe in ['quiet', 'busy', 'security', 'police', 'utility_ok', 'utility_down'] &&
+                    request.resource.data.keys().hasOnly(['locationId', 'userId', 'userName', 'vibe', 'createdAt']);
     }
 
     // User badges/achievements - users can read all badges, only admin/system can manage
