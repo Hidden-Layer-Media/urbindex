@@ -3,14 +3,20 @@ export const mapMethods = {
     // If we already have a fresh cached location the map was already centered there — skip
     if (this.getCachedUserLocation()) return;
     this.showLocationIndicator('detecting', 'Detecting location...');
-    this.getUserLocationWithFallbacks()
+    // Never pull the map away from somewhere the user already went.
+    const mayMove = () => this.map && !this._userNavigated && !new URLSearchParams(location.search).has('loc');
+    this.getUserLocation({ silent: true })
       .then(([lat, lng]) => {
         this.cacheUserLocation(lat, lng);
-        if (this.map) this.map.setView([lat, lng], 13);
+        if (mayMove()) this.map.setView([lat, lng], 13);
         this.showLocationIndicator('success', 'Location detected!');
         setTimeout(() => this.hideLocationIndicator(), 2000);
       })
-      .catch(() => this.hideLocationIndicator());
+      .catch(async () => {
+        this.hideLocationIndicator();
+        const regional = await this.getLocaleBasedLocation();
+        if (mayMove()) this.map.setView(regional, 4);
+      });
   },
 
   initializeMap(lat, lng) {
@@ -29,6 +35,10 @@ export const mapMethods = {
     // The search bar owns the top of the map and the add button sits bottom-right.
     this.map.attributionControl.setPosition('bottomleft');
     this.map.zoomControl.setPosition('bottomleft');
+
+    const markNavigated = () => { this._userNavigated = true; };
+    this.map.getContainer().addEventListener('pointerdown', markNavigated, { passive: true });
+    this.map.getContainer().addEventListener('wheel', markNavigated, { passive: true });
 
     this.map.on('click', e => this.handleMapClick(e));
     window.addEventListener('resize', () => { if (this.map) setTimeout(() => this.map.invalidateSize(), 100); });
@@ -74,35 +84,41 @@ export const mapMethods = {
     this.showToast(`Location set: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, 'success');
   },
 
-  async getUserLocationWithFallbacks() {
-    const cached = this.getCachedUserLocation();
-    if (cached) return cached;
-    if (!navigator.geolocation) throw new Error('Geolocation not supported');
-    try {
-      return await this.getUserLocation();
-    } catch {
-      const locale = await this.getLocaleBasedLocation();
-      if (locale) return locale;
-      throw new Error('Location unavailable');
-    }
-  },
-
-  getUserLocation() {
+  // `silent` is for the automatic lookup on load, which must not lock the location button.
+  getUserLocation({ silent = false } = {}) {
     return new Promise((resolve, reject) => {
-      this.setRecenterButtonState('loading');
+      const setState = state => { if (!silent) this.setRecenterButtonState(state); };
+      const fail = message => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(guard);
+        setState('error');
+        if (!silent) setTimeout(() => this.setRecenterButtonState('default'), 3000);
+        reject(new Error(message));
+      };
+      let settled = false;
+      if (!navigator.geolocation) { fail('Location is not supported in this browser. Search an address instead.'); return; }
+      setState('loading');
+      // Browsers can leave this unanswered forever, so the API's own timeout isn't enough.
+      const guard = setTimeout(() => fail('Could not get your location. Search an address instead.'), 12000);
       navigator.geolocation.getCurrentPosition(
         pos => {
-          this.setRecenterButtonState('success');
-          setTimeout(() => this.setRecenterButtonState('default'), 2000);
+          if (settled) return;
+          settled = true;
+          clearTimeout(guard);
+          setState('success');
+          if (!silent) setTimeout(() => this.setRecenterButtonState('default'), 2000);
           resolve([pos.coords.latitude, pos.coords.longitude]);
         },
         err => {
-          this.setRecenterButtonState('error');
-          setTimeout(() => this.setRecenterButtonState('default'), 3000);
-          const msgs = { 1: 'Location access denied.', 2: 'Location unavailable.', 3: 'Location request timed out.' };
-          reject(new Error(msgs[err.code] || 'Unable to get location'));
+          const msgs = {
+            1: 'Location access is blocked. Allow it in your browser, or search an address.',
+            2: 'Your device could not find its location. Search an address instead.',
+            3: 'Location request timed out. Search an address instead.',
+          };
+          fail(msgs[err.code] || 'Could not get your location. Search an address instead.');
         },
-        { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
       );
     });
   },
@@ -201,9 +217,16 @@ export const mapMethods = {
     if (wait > 0) await new Promise(resolve => setTimeout(resolve, wait));
 
     const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(query)}&limit=${limit}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(res.status === 429 ? 'Geocoding rate limit exceeded. Please try again later.' : 'Geocoding service unavailable. Please check your connection.');
-    const data = await res.json();
+    let data;
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) throw new Error(res.status === 429 ? 'Too many searches. Wait a moment and try again.' : 'The address service is having trouble. Try again shortly.');
+      data = await res.json();
+    } catch (err) {
+      if (err.name === 'TimeoutError') throw new Error('Search timed out. Check your connection and try again.');
+      if (err instanceof TypeError) throw new Error('Could not reach the address service. A browser extension or network may be blocking it.');
+      throw err;
+    }
     const places = data.map(p => {
       const [south, north, west, east] = (p.boundingbox || []).map(Number);
       return {
@@ -225,7 +248,7 @@ export const mapMethods = {
 
   async reverseGeocode(lat, lng) {
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, { signal: AbortSignal.timeout(10000) });
       const data = await res.json();
       return data.display_name || 'Current location';
     } catch { return 'Current location'; }
@@ -426,6 +449,7 @@ export const mapMethods = {
 
   _goToPlace(place, openPopup = true) {
     if (!this.map || !place) return;
+    this._userNavigated = true;
     if (this._searchMarker) this.map.removeLayer(this._searchMarker);
 
     const popup = document.createElement('div');
