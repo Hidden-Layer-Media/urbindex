@@ -181,3 +181,17 @@ test('one report per user, write-only', async () => {
   await assertFails(setDoc(doc(db, 'location_reports/loc1_bob'), { ...report }));
   await assertFails(setDoc(doc(anon(), 'location_reports/loc1_x'), { ...report, reportedBy: 'x' }));
 });
+
+// ── profile photos ──
+test('users can save a small avatar but not an oversized one', async () => {
+  await env.withSecurityRulesDisabled(ctx => setDoc(doc(ctx.firestore(), 'users/alice'), { email: 'a@example.com', displayName: 'Alice' }));
+  await assertSucceeds(updateDoc(doc(as('alice'), 'users/alice'), { photoURL: `data:image/jpeg;base64,${'a'.repeat(50000)}` }));
+  await assertFails(updateDoc(doc(as('alice'), 'users/alice'), { photoURL: 'a'.repeat(100001) }));
+  await assertFails(updateDoc(doc(as('bob'), 'users/alice'), { photoURL: 'data:image/jpeg;base64,aa' }));
+});
+
+test('gallery is owner-only and capped at 10 images', async () => {
+  await assertSucceeds(setDoc(doc(as('alice'), 'user_profiles/alice'), { gallery: Array(10).fill('data:image/jpeg;base64,aa') }));
+  await assertFails(setDoc(doc(as('alice'), 'user_profiles/alice'), { gallery: Array(11).fill('data:image/jpeg;base64,aa') }));
+  await assertFails(setDoc(doc(as('bob'), 'user_profiles/alice'), { gallery: [] }));
+});

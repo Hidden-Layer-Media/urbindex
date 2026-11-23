@@ -223,10 +223,12 @@ export const authMethods = {
 
   async createUserProfile(user, provider) {
     try {
+      // Signing in again must not replace a photo the user uploaded.
+      const existing = await this.db.collection('users').doc(user.uid).get().catch(() => null);
       await this.db.collection('users').doc(user.uid).set({
         email: user.email,
         displayName: user.displayName || `Explorer ${user.uid.substring(0, 6)}`,
-        photoURL: user.photoURL,
+        photoURL: existing?.data()?.photoURL || user.photoURL || null,
         provider,
         emailVerified: user.emailVerified,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
