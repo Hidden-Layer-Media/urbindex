@@ -77,7 +77,7 @@
         Session expires in <span id="session-countdown">5</span>m
         <button class="btn btn-sm" onclick="app.refreshSession()">Extend</button>
       </div>
-      <button class="btn btn-sm" onclick="app.openGlobalSearch()" title="Search (Ctrl+K)" aria-label="Search">
+      <button class="btn btn-sm" onclick="app.openGlobalSearch()" title="Search spots, posts, and users (Ctrl+K)" aria-label="Search spots, posts, and users">
         <i class="fas fa-search"></i>
       </button>
       <button class="btn btn-sm" id="profile-btn" onclick="app.handleProfileButtonClick()">
@@ -110,38 +110,26 @@
   </nav>
 
   <!-- FAB -->
-  <button class="btn btn-primary fab" id="add-location-fab" aria-label="Add Location">
-    <i class="fas fa-plus"></i>
+  <button class="btn btn-primary fab" id="add-location-fab" aria-label="Add a spot">
+    <i class="fas fa-plus"></i> <span>Add spot</span>
   </button>
 
   <main class="main" id="main-content" role="main">
 
     <!-- MAP VIEW -->
     <div class="view active" id="map-view">
-      <div class="cmd-strip">
-        <div class="cmd-id-bar">
-          <span class="cmd-id-title">URBINDEX</span>
-          <span class="cmd-id-sep">::</span>
-          <span class="cmd-id-sub">FIELD OPS</span>
-          <div class="cmd-live-stats">
-            <span class="cmd-live-stat"><span class="cmd-live-val" id="hero-total-locations">0</span><span class="cmd-live-lbl"> locs</span></span>
-            <span class="cmd-live-sep">/</span>
-            <span class="cmd-live-stat"><span class="cmd-live-val" id="hero-active-users">0</span><span class="cmd-live-lbl"> explorers</span></span>
-            <span class="cmd-live-sep">/</span>
-            <span class="cmd-live-stat"><span class="cmd-live-lbl">idx </span><span class="cmd-live-val" id="hero-activity-index">--</span></span>
-          </div>
-        </div>
-        <div class="cmd-action-bar">
-          <span class="cmd-prompt">$</span>
-          <button class="btn btn-primary btn-sm" onclick="app.showAddLocationModal()"><i class="fas fa-plus"></i> drop_location</button>
-          <button class="btn btn-sm" id="recenter-btn"><i class="fas fa-crosshairs"></i> <span>my_pos</span></button>
-          <button class="btn btn-sm" onclick="app.showView('forum')"><i class="fas fa-comments"></i> forum</button>
-          <button class="btn btn-sm" onclick="app.createNewPost()"><i class="fas fa-bullhorn"></i> post_intel</button>
-        </div>
-      </div>
-
       <div class="map-layout">
         <aside class="sidebar">
+          <div class="panel area-ops-panel">
+            <div class="panel-header"><i class="fas fa-route"></i> Nearby Spots</div>
+            <div class="area-ops-body">
+              <div class="nearby-header">
+                <span class="nearby-origin" id="nearby-origin">from map center</span>
+                <button class="nearby-refresh" onclick="app.renderNearby()" title="Refresh nearby spots" aria-label="Refresh nearby spots"><i class="fas fa-rotate"></i></button>
+              </div>
+              <div class="nearby-list" id="nearby-list"><div class="nearby-empty">loading...</div></div>
+            </div>
+          </div>
           <div class="panel">
             <div class="panel-header"><i class="fas fa-rss"></i> Recent Activity</div>
             <div class="panel-body"><div id="activity-feed"><div class="loading">Loading...</div></div></div>
@@ -163,30 +151,25 @@
               </div>
             </div>
           </div>
-          <div class="panel area-ops-panel">
-            <div class="panel-header"><i class="fas fa-crosshairs"></i> Area Ops</div>
-            <div class="area-ops-body">
-              <div class="area-pos-row" id="area-pos-row">
-                <span class="area-pos-label"><i class="fas fa-satellite-dish"></i> position</span>
-                <span class="area-pos-coords" id="area-coords">-- no fix --</span>
-              </div>
-              <button class="btn area-ops-locate-btn" id="area-ops-locate" onclick="app.areaOpsLocate()">
-                <i class="fas fa-location-arrow"></i> acquire gps
-              </button>
-              <button class="btn btn-primary area-ops-pin-btn" onclick="app.showAddLocationModal()">
-                <i class="fas fa-map-marker-alt"></i> drop pin here
-              </button>
-              <div class="nearby-header">
-                <span><i class="fas fa-route"></i> nearest spots</span>
-                <button class="nearby-refresh" onclick="app.renderNearby()" title="Recalculate from map center"><i class="fas fa-rotate"></i></button>
-              </div>
-              <div class="nearby-origin" id="nearby-origin">from map center</div>
-              <div class="nearby-list" id="nearby-list"><div class="nearby-empty">loading...</div></div>
-            </div>
-          </div>
         </aside>
         <div class="map-container">
           <div id="map" tabindex="0" aria-label="Urban exploration map"></div>
+          <form class="map-search" id="map-search" role="search" autocomplete="off">
+            <div class="map-search-row">
+              <div class="map-search-field">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input id="map-search-input" type="text" enterkeyhint="search" maxlength="200" placeholder="Search any address, city, or place" aria-label="Search any address, city, or place">
+                <button type="button" class="map-search-clear is-hidden" id="map-search-clear" aria-label="Clear search"><i class="fas fa-xmark"></i></button>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm" id="map-search-submit">Search</button>
+              <button type="button" class="btn btn-sm map-locate-btn" id="recenter-btn" aria-label="Go to my location" title="Go to my location"><i class="fas fa-crosshairs"></i> <span>my location</span></button>
+            </div>
+            <div class="map-search-results is-hidden" id="map-search-results" aria-live="polite"></div>
+          </form>
+          <div class="map-pick-banner" id="map-pick-banner" role="status">
+            <span>Click the map to place your spot</span>
+            <button type="button" class="btn btn-sm" id="map-pick-cancel">Back to form</button>
+          </div>
           <div id="location-indicator" class="location-indicator">
             <i class="fas fa-location-arrow"></i>
             <span>Detecting location...</span>
@@ -303,7 +286,7 @@
 <!-- ===== MODALS ===== -->
 
 <!-- Add/Edit Location Modal -->
-<div id="location-modal-overlay" class="modal-overlay" onclick="if(event.target===this)app.hideModal()">
+<div id="location-modal-overlay" class="modal-overlay">
   <div class="modal modal-terminal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
     <div class="modal-titlebar">
       <div class="modal-titlebar-dots"><span></span><span></span><span></span></div>
@@ -374,7 +357,7 @@
           <button type="button" class="btn btn-sm" id="find-location-btn"><i class="fas fa-search"></i></button>
           <button type="button" class="btn btn-sm" id="use-my-location-btn"><i class="fas fa-crosshairs"></i></button>
         </div>
-        <div class="form-hint">Or click on the map to pin a location</div>
+        <button type="button" class="btn btn-sm mt-8" id="pick-on-map-btn"><i class="fas fa-map-pin"></i> Pick on map</button>
       </div>
       <div class="form-grid-2">
         <div class="form-group">
@@ -386,7 +369,7 @@
           <input class="input" type="number" id="location-lng" step="any" placeholder="0.000000">
         </div>
       </div>
-      <div id="coordinates-display" class="coords-display">Click on map or use address to set location</div>
+      <div id="coordinates-display" class="coords-display">No pin set yet. Search an address or pick on the map.</div>
       <div class="modal-section-label">Tags</div>
       <div class="form-group">
         <div class="form-inline mb-6">
@@ -609,7 +592,7 @@
             <button type="button" class="btn btn-primary" onclick="document.getElementById('profile-photo-file').click()">
               <i class="fas fa-upload"></i> Upload Photo
             </button>
-            <span class="upload-hint">JPG, PNG, GIF &mdash; max 5MB</span>
+            <span class="upload-hint">JPG, PNG, or WebP &mdash; up to 20MB, resized automatically</span>
           </div>
         </div>
       </div>

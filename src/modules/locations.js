@@ -9,6 +9,7 @@ export const locationsMethods = {
   },
 
   hideModal() {
+    this._endLocationPick();
     const modal = document.getElementById('location-modal-overlay');
     if (modal) modal.classList.remove('active');
     const form = document.getElementById('location-form');
@@ -24,7 +25,7 @@ export const locationsMethods = {
     this.selectedLatLng = null;
     const coordsDisplay = document.getElementById('coordinates-display');
     if (coordsDisplay) {
-      coordsDisplay.textContent = 'Click on map or use address to set location';
+      coordsDisplay.textContent = 'No pin set yet. Search an address or pick on the map.';
       coordsDisplay.classList.add('active');
     }
     const addrEl = document.getElementById('location-address');

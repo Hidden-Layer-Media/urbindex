@@ -4374,3 +4374,108 @@ select.select:focus {
 /* Private spot marker in popups / detail */
 .private-chip { color: #aaa; border-color: rgba(170, 170, 170, 0.4); }
 .private-chip i { margin-right: 4px; }
+
+/* ── Map address search ── */
+.map-container { isolation: isolate; }
+.map-container.is-picking #map { cursor: crosshair; }
+.map-search {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(640px, calc(100% - 20px));
+  z-index: 800;
+}
+.map-search .is-hidden { display: none; }
+.map-search-row { display: flex; align-items: stretch; gap: 6px; }
+.map-search-row > .btn { min-height: 40px; flex-shrink: 0; }
+.map-search-field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 12px;
+  background: var(--black-panel);
+  border: 1px solid var(--yellow-dim);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.85);
+  color: var(--yellow);
+}
+.map-search-field:focus-within { border-color: var(--yellow); box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.85), var(--glow-yellow); }
+.map-search-field input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 16px;
+}
+.map-search-field input::placeholder { color: var(--text-dim); }
+.map-search-clear { background: none; border: 0; color: var(--text-dim); cursor: pointer; padding: 6px; }
+.map-search-clear:hover { color: var(--yellow); }
+.map-search-results {
+  margin-top: 4px;
+  max-height: 40vh;
+  overflow-y: auto;
+  background: var(--black-panel);
+  border: 1px solid var(--yellow-dim);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.85);
+}
+.map-search-result {
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+}
+.map-search-result:last-child { border-bottom: 0; }
+.map-search-result:hover, .map-search-result:focus { background: var(--black-raised); color: var(--yellow); outline: 0; }
+.map-search-result.is-current { border-left: 3px solid var(--yellow); }
+.map-search-message { padding: 10px 12px; color: var(--text-dim); font-size: 12px; }
+.map-search-add { margin-top: 8px; width: 100%; justify-content: center; }
+
+/* Pick on map: the form stays mounted so typed values survive */
+.modal-overlay.active.is-picking { opacity: 0; visibility: hidden; pointer-events: none; }
+.map-pick-banner {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 20px);
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 12px;
+  background: var(--yellow);
+  color: var(--black);
+  font-size: 12px;
+  font-weight: 700;
+  z-index: 810;
+}
+.map-pick-banner.active { display: flex; }
+
+/* Labeled add button */
+.fab { width: auto; padding: 0 16px; gap: 8px; font-size: 13px; }
+.fab i { font-size: 15px; }
+
+@media (max-width: 700px) {
+  .fab { width: auto; padding: 0 14px; }
+  .map-locate-btn span { display: none; }
+  .map-search-row > .btn { padding-left: 10px; padding-right: 10px; }
+}
+
+.map-popup:has(.map-search-add) .map-popup-desc { color: var(--text); padding-right: 14px; }
+
+/* Sits below the search bar so first-load location status stays visible */
+.map-container .location-indicator { top: auto; bottom: 14px; z-index: 790; white-space: nowrap; }
