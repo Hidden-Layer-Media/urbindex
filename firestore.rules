@@ -26,14 +26,21 @@ service cloud.firestore {
     }
     
     // User profiles - authenticated users can read all profiles, only edit their own
+    // Avatars are small inline images; keep them bounded so user lists stay cheap to read.
+    function validAvatar(d) {
+      return !('photoURL' in d) || d.photoURL == null || (d.photoURL is string && d.photoURL.size() <= 100000);
+    }
+
     match /users/{userId} {
       allow read: if request.auth != null; // Restrict to authenticated users
       allow create: if request.auth != null && request.auth.uid == userId &&
                     request.resource.data.keys().hasAll(['email', 'displayName']) &&
                     isValidEmail(request.resource.data.email) &&
                     isValidDisplayName(request.resource.data.displayName) &&
+                    validAvatar(request.resource.data) &&
                     request.resource.data.createdAt == request.time;
       allow update: if request.auth != null && request.auth.uid == userId &&
+                    validAvatar(request.resource.data) &&
                     // Prevent email changes through direct updates (use auth)
                     !request.resource.data.diff(resource.data).affectedKeys().hasAny(['email']) &&
                     (!('displayName' in request.resource.data) || isValidDisplayName(request.resource.data.displayName)) &&
@@ -44,7 +51,9 @@ service cloud.firestore {
     // User profile extensions - for additional profile data
     match /user_profiles/{userId} {
       allow read: if request.auth != null; // Restrict to authenticated users
-      allow create, update: if request.auth != null && request.auth.uid == userId;
+      allow create, update: if request.auth != null && request.auth.uid == userId &&
+                            (!('gallery' in request.resource.data) ||
+                             (request.resource.data.gallery is list && request.resource.data.gallery.size() <= 10));
       allow delete: if request.auth != null && request.auth.uid == userId;
     }
 

@@ -37,7 +37,7 @@ export const exploreMethods = {
   },
 
   // Lists the closest pins to the GPS fix (or the map center if there's no fix).
-  renderNearby(origin) {
+  renderNearby(origin, originLabel) {
     const list = document.getElementById('nearby-list');
     if (!list) return;
     const center = origin || this._lastFix || (this.map && [this.map.getCenter().lat, this.map.getCenter().lng]);
@@ -52,7 +52,7 @@ export const exploreMethods = {
     items.sort((a, b) => a.km - b.km);
     const top = items.slice(0, 8);
     const label = document.getElementById('nearby-origin');
-    if (label) label.textContent = origin || this._lastFix ? 'from your position' : 'from map center';
+    if (label) label.textContent = originLabel || (origin || this._lastFix ? 'from your position' : 'from map center');
     if (!top.length) { list.innerHTML = '<div class="nearby-empty">no spots indexed yet</div>'; return; }
     list.innerHTML = top.map(({ id, d, km }) => `
       <button class="nearby-item" onclick="app.openLocationPin('${id}')">

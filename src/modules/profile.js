@@ -103,7 +103,7 @@ export const profileMethods = {
         : '';
 
       // --- Gallery in Overview ---
-      const gallery = (Array.isArray(ud.gallery) ? ud.gallery.filter(Boolean) : []);
+      const gallery = await this._loadGallery(targetId, ud);
       const galleryHtml = gallery.length
         ? `<section class="panel"><div class="panel-header">Gallery</div><div class="panel-body"><div class="gallery-grid">${gallery.map(s => `<div class="gallery-item"><img src="${this.escapeHtml(s)}" alt="Gallery"></div>`).join('')}</div></div></section>`
         : '';
@@ -228,7 +228,7 @@ export const profileMethods = {
     if (!modal) return;
     this._pendingPhotoFile = null;
     this._pendingGalleryFiles = [];
-    this.db.collection('users').doc(this.currentUser.uid).get().then(doc => {
+    this.db.collection('users').doc(this.currentUser.uid).get().then(async doc => {
       const d = doc.exists ? doc.data() : {};
       document.getElementById('profile-display-name').value = d.displayName || '';
       document.getElementById('profile-bio').value = d.bio || '';
@@ -247,7 +247,7 @@ export const profileMethods = {
         }
       }
       // show current gallery
-      this._currentGalleryUrls = Array.isArray(d.gallery) ? d.gallery.filter(Boolean) : [];
+      this._currentGalleryUrls = await this._loadGallery(this.currentUser.uid, d);
       this._renderEditGallery();
     }).catch(() => {});
     // switch to first tab
@@ -284,24 +284,30 @@ export const profileMethods = {
     document.getElementById(tabId)?.classList.remove('hidden');
   },
 
-  _onProfilePhotoSelected(e) {
+  async _onProfilePhotoSelected(e) {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
     if (!file.type.startsWith('image/')) { this.showToast('Please select an image file', 'error'); return; }
-    if (file.size > 5 * 1024 * 1024) { this.showToast('Image must be under 5MB', 'error'); return; }
-    this._pendingPhotoFile = file;
-    const preview = document.getElementById('profile-photo-preview');
-    if (preview) {
-      const url = URL.createObjectURL(file);
-      preview.innerHTML = `<img src="${url}" alt="New photo"><div class="upload-pending-label">pending upload</div>`;
-    }
+    if (file.size > 20 * 1024 * 1024) { this.showToast('Image must be under 20MB', 'error'); return; }
+    try {
+      const url = await this._compressImage(file, 320, 60000);
+      this._pendingPhotoFile = url;
+      const preview = document.getElementById('profile-photo-preview');
+      if (preview) preview.innerHTML = `<img src="${url}" alt="New photo"><div class="upload-pending-label">not saved yet</div>`;
+    } catch (err) { this.showToast(err.message, 'error'); }
   },
 
-  _onGalleryFilesSelected(e) {
-    const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/')).slice(0, 10);
-    if (!files.length) return;
-    this._pendingGalleryFiles = (this._pendingGalleryFiles || []).concat(files).slice(0, 10);
-    this._renderEditGallery();
+  async _onGalleryFilesSelected(e) {
+    const room = 10 - (this._currentGalleryUrls?.length || 0) - (this._pendingGalleryFiles?.length || 0);
+    const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/') && f.size <= 20 * 1024 * 1024).slice(0, Math.max(room, 0));
+    e.target.value = '';
+    if (!files.length) { if (room <= 0) this.showToast('Gallery is full (10 images)', 'warning'); return; }
+    try {
+      const urls = await Promise.all(files.map(f => this._compressImage(f, 900, 80000)));
+      this._pendingGalleryFiles = (this._pendingGalleryFiles || []).concat(urls);
+      this._renderEditGallery();
+    } catch (err) { this.showToast(err.message, 'error'); }
   },
 
   _renderEditGallery() {
@@ -313,8 +319,7 @@ export const profileMethods = {
         <button type="button" class="gallery-remove-btn" onclick="app._removeGalleryItem(${i},true)" title="Remove">&times;</button>
       </div>`
     );
-    const pending = (this._pendingGalleryFiles || []).map((f, i) => {
-      const url = URL.createObjectURL(f);
+    const pending = (this._pendingGalleryFiles || []).map((url, i) => {
       return `<div class="edit-gallery-thumb pending">
         <img src="${url}" alt="Pending">
         <button type="button" class="gallery-remove-btn" onclick="app._removeGalleryItem(${i},false)" title="Remove">&times;</button>
@@ -333,18 +338,38 @@ export const profileMethods = {
     this._renderEditGallery();
   },
 
-  async _uploadProfilePhoto(file) {
-    const ext = file.name.split('.').pop() || 'jpg';
-    const ref = this.storage.ref(`profile_photos/${this.currentUser.uid}.${ext}`);
-    const snap = await ref.put(file);
-    return snap.ref.getDownloadURL();
+  // Photos are shrunk in the browser and stored in Firestore, so they need no paid Storage bucket.
+  async _compressImage(file, maxSide, maxChars) {
+    let bitmap;
+    try { bitmap = await createImageBitmap(file); }
+    catch { throw new Error('That image format is not supported. Try a JPG, PNG, or WebP.'); }
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    let side = Math.min(maxSide, Math.max(bitmap.width, bitmap.height));
+    try {
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const scale = side / Math.max(bitmap.width, bitmap.height);
+        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        for (const quality of [0.82, 0.68, 0.54]) {
+          const url = canvas.toDataURL('image/jpeg', quality);
+          if (url.length <= maxChars) return url;
+        }
+        side = Math.round(side * 0.75);
+      }
+    } finally { bitmap.close(); }
+    throw new Error('That image could not be made small enough.');
   },
 
-  async _uploadGalleryFile(file, idx) {
-    const ext = file.name.split('.').pop() || 'jpg';
-    const ref = this.storage.ref(`gallery/${this.currentUser.uid}/${Date.now()}_${idx}.${ext}`);
-    const snap = await ref.put(file);
-    return snap.ref.getDownloadURL();
+  async _loadGallery(uid, userData = {}) {
+    try {
+      const doc = await this.db.collection('user_profiles').doc(uid).get();
+      if (doc.exists && Array.isArray(doc.data().gallery)) return doc.data().gallery.filter(Boolean);
+    } catch { /* fall back to the older field on the user doc */ }
+    return Array.isArray(userData.gallery) ? userData.gallery.filter(Boolean) : [];
   },
 
   showEditProfileModal() { return this.showEditProfile(); },
@@ -374,19 +399,15 @@ export const profileMethods = {
       const existingDoc = await this.db.collection('users').doc(this.currentUser.uid).get();
       photoURL = existingDoc.exists ? (existingDoc.data().photoURL || null) : null;
 
-      if (this._pendingPhotoFile) {
-        this.setButtonLoading(btn, true, 'Uploading photo...');
-        photoURL = await this._uploadProfilePhoto(this._pendingPhotoFile);
-      }
+      if (this._pendingPhotoFile) photoURL = this._pendingPhotoFile;
+      const galleryUrls = [...(this._currentGalleryUrls || []), ...(this._pendingGalleryFiles || [])].slice(0, 10);
 
-      let galleryUrls = [...(this._currentGalleryUrls || [])];
-      if (this._pendingGalleryFiles?.length) {
-        this.setButtonLoading(btn, true, 'Uploading gallery...');
-        const uploaded = await Promise.all(this._pendingGalleryFiles.map((f, i) => this._uploadGalleryFile(f, i)));
-        galleryUrls = galleryUrls.concat(uploaded);
-      }
-
-      this.setButtonLoading(btn, true, 'Saving...');
+      // The gallery has its own doc so lists of users stay small to download.
+      await this.db.collection('user_profiles').doc(this.currentUser.uid).set({
+        userId: this.currentUser.uid,
+        gallery: galleryUrls,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
       await this.db.collection('users').doc(this.currentUser.uid).set({
         displayName: displayName || null,
         bio: bio || null,
@@ -396,14 +417,17 @@ export const profileMethods = {
         pronouns: pronouns || null,
         photoURL: photoURL || null,
         links,
-        gallery: galleryUrls,
+        gallery: firebase.firestore.FieldValue.delete(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       }, { merge: true });
-      if (displayName || photoURL) await this.currentUser.updateProfile({ displayName: displayName || null, photoURL: photoURL || null });
+      // Firebase Auth rejects long photo URLs, so an uploaded avatar lives only on the user doc.
+      const authProfile = { displayName: displayName || null };
+      if (!photoURL?.startsWith('data:')) authProfile.photoURL = photoURL || null;
+      if (displayName || photoURL) await this.currentUser.updateProfile(authProfile);
       this.hideEditProfileModal();
       this.showToast('Profile updated!', 'success');
       this.loadProfile();
-    } catch (err) { this.showToast('Failed to update profile: ' + err.message, 'error'); }
+    } catch (err) { this.showToast(`Failed to update profile: ${err.message}`, 'error'); }
     finally { this.setButtonLoading(btn, false); }
   },
 

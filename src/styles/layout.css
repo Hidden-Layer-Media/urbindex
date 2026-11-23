@@ -188,7 +188,7 @@
   display: grid;
   grid-template-columns: 272px 1fr;
   gap: 8px;
-  height: calc(100vh - 122px);
+  height: calc(100vh - 104px);
   min-height: 480px;
 }
 
@@ -477,7 +477,7 @@
 
   .map-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(420px, 62vh);
+    grid-template-rows: auto auto;
     height: auto;
     min-height: 0;
   }
@@ -489,7 +489,7 @@
 
   .map-container {
     order: 1;
-    height: min(62vh, 560px);
+    height: calc(100svh - 150px);
     min-height: 420px;
   }
 
@@ -522,6 +522,9 @@
     padding: 10px 11px;
     letter-spacing: 1px;
   }
+
+  /* Profile is already in the nav; dropping it keeps the header to one row. */
+  #profile-btn { display: none; }
 
   .cmd-id-title {
     font-size: 13px;

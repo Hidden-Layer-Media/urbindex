@@ -17,13 +17,19 @@ export const uiMethods = {
       offline: () => this.updateOnlineStatus(false),
       globalKeydown: e => {
         if (e.key === 'Escape') {
+          // While picking a pin, Esc only cancels the pick so the typed form survives.
+          if (this._pickingLocation) { this._endLocationPick(); return; }
           this.hideModal();
           this.hidePasswordResetModal();
           this.hideAuthModal();
           this.hideEditProfileModal();
           this.hideUserLocationsModal();
           this.closeGlobalSearch?.();
-          document.querySelectorAll('.modal-overlay.active').forEach(m => m.remove());
+          // The detail modal is static markup and must survive Esc; dynamic overlays are removed.
+          document.querySelectorAll('.modal-overlay.active').forEach(m => {
+            if (m.id === 'location-detail-modal') m.classList.remove('active');
+            else m.remove();
+          });
         }
         // Shortcuts: Ctrl+K: Search, Ctrl+M: Map, Ctrl+P: Profile
         if (e.ctrlKey || e.metaKey) {
@@ -166,35 +172,17 @@ export const uiMethods = {
     if (addrInput) {
       addrInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); this.handleAddressLookup(); } });
     }
-    this.initAreaOpsPanel();
-  },
-
-  initAreaOpsPanel() {
-    const cached = this.getCachedUserLocation?.();
-    if (cached) this._setAreaOpsCoords(cached[0], cached[1]);
-  },
-
-  async areaOpsLocate() {
-    const btn = document.getElementById('area-ops-locate');
-    const coordEl = document.getElementById('area-coords');
-    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> acquiring...'; }
-    if (coordEl) coordEl.textContent = '-- scanning --';
-    try {
-      const [lat, lng] = await this.getUserLocation();
-      this._setAreaOpsCoords(lat, lng);
-      this._lastFix = [lat, lng];
-      this.map?.setView([lat, lng], 15);
-      this.renderNearby([lat, lng]);
-    } catch (err) {
-      if (coordEl) coordEl.textContent = '-- denied --';
-    } finally {
-      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-location-arrow"></i> acquire gps'; }
-    }
-  },
-
-  _setAreaOpsCoords(lat, lng) {
-    const el = document.getElementById('area-coords');
-    if (el) el.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    document.getElementById('pick-on-map-btn')?.addEventListener('click', () => this.startLocationPick());
+    // Typed coordinates count as the pin; the form only reads selectedLatLng on save.
+    ['location-lat', 'location-lng'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', () => {
+        const latText = document.getElementById('location-lat').value;
+        const lngText = document.getElementById('location-lng').value;
+        const [lat, lng] = [parseFloat(latText), parseFloat(lngText)];
+        if (Number.isFinite(lat) && Number.isFinite(lng)) this.selectedLatLng = { lat, lng };
+      });
+    });
+    this.initMapSearch();
   },
 
 };
